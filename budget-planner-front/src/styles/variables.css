@@ -1,0 +1,31 @@
+:root {
+
+  /* ***********************************
+    COULEURS
+  *********************************** */
+  --dark-blue: #003366;
+  --blue: #006DDA;
+  --pale-blue: #E3EDF5;
+ 
+  --dark-green: #2E7D32;
+  --green: #4CAF50;
+  --pale-green: #EAF7EA;
+ 
+  --dark-red: #7b1b1b;
+  --red: #D32F2F;
+  --pale-red: #FDECEA;
+
+  --orange: #F57C00;
+  --pale-orange: #FFF8E1;
+
+  @media (max-width: 1024px) {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #9ca3af;
+    --text-h: #f3f4f6;
+  }
+}
