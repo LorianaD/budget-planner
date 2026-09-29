@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Transaction;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -40,4 +41,59 @@ class TransactionRepository extends ServiceEntityRepository
 //            ->getOneOrNullResult()
 //        ;
 //    }
+
+    // src/Repository/TransactionRepository.php — methods to add
+
+    /**
+     * @return Transaction[]
+     */
+    public function findAllForUser(User $user): array
+    {
+        // Fetch-join account and category to avoid one query per transaction
+        $query = $this->getEntityManager()->createQuery(
+            'SELECT t, a, c
+             FROM App\Entity\Transaction t
+             JOIN t.account a
+             JOIN t.category c
+             JOIN a.household h
+             JOIN h.householdMembers m
+             WHERE m.user = :user
+             ORDER BY t.date DESC, t.id DESC'
+        );
+        $query->setParameter('user', $user);
+
+        return $query->getResult();
+    }
+
+    public function findOneForUser(int $id, User $user): ?Transaction
+    {
+        $query = $this->getEntityManager()->createQuery(
+            'SELECT t, a, c
+             FROM App\Entity\Transaction t
+             JOIN t.account a
+             JOIN t.category c
+             JOIN a.household h
+             JOIN h.householdMembers m
+             WHERE t.id = :id
+             AND m.user = :user'
+        );
+        $query->setParameter('id', $id);
+        $query->setParameter('user', $user);
+
+        return $query->getOneOrNullResult();
+    }
+
+    public function save(Transaction $transaction): void
+    {
+        $entityManager = $this->getEntityManager();
+        $entityManager->persist($transaction);
+        $entityManager->flush();
+    }
+
+    public function remove(Transaction $transaction): void
+    {
+        $entityManager = $this->getEntityManager();
+        $entityManager->remove($transaction);
+        $entityManager->flush();
+    }
 }

@@ -103,7 +103,7 @@ class Transaction
         return $this;
     }
 
-    public function getType(): ?string
+    public function getType(): ?TransactionType
     {
         return $this->type;
     }
@@ -156,19 +156,19 @@ class Transaction
         return $this->isRecurring;
     }
 
-    public function setIsRecurring(bool $is_recurring): static
+    public function setIsRecurring(bool $isRecurring): static
     {
-        $this->isRecurring = $is_recurring;
+        $this->isRecurring = $isRecurring;
 
         return $this;
     }
 
-    public function getFrequency(): ?string
+    public function getFrequency(): ?TransactionFrequency
     {
         return $this->frequency;
     }
 
-    public function setFrequency(?string $frequency): static
+    public function setFrequency(?TransactionFrequency $frequency): static
     {
         $this->frequency = $frequency;
 
@@ -180,9 +180,9 @@ class Transaction
         return $this->commitmentEndDate;
     }
 
-    public function setCommitmentEndDate(?\DateTimeImmutable $commitment_end_date): static
+    public function setCommitmentEndDate(?\DateTimeImmutable $commitmentEndDate): static
     {
-        $this->commitmentEndDate = $commitment_end_date;
+        $this->commitmentEndDate = $commitmentEndDate;
 
         return $this;
     }

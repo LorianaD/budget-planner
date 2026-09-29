@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Category;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -40,4 +41,20 @@ class CategoryRepository extends ServiceEntityRepository
 //            ->getOneOrNullResult()
 //        ;
 //    }
+
+    public function findOneForUser(int $id, User $user): ?Category
+    {
+        $query = $this->getEntityManager()->createQuery(
+            'SELECT c
+             FROM App\Entity\Category c
+             JOIN c.household h
+             JOIN h.householdMembers m
+             WHERE c.id = :id
+             AND m.user = :user'
+        );
+        $query->setParameter('id', $id);
+        $query->setParameter('user', $user);
+
+        return $query->getOneOrNullResult();
+    }
 }

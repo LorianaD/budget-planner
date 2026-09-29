@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Account;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -40,4 +41,20 @@ class AccountRepository extends ServiceEntityRepository
 //            ->getOneOrNullResult()
 //        ;
 //    }
+
+    public function findOneForUser(int $id, User $user): ?Account
+    {
+        $query = $this->getEntityManager()->createQuery(
+            'SELECT a
+             FROM App\Entity\Account a
+             JOIN a.household h
+             JOIN h.householdMembers m
+             WHERE a.id = :id
+             AND m.user = :user'
+        );
+        $query->setParameter('id', $id);
+        $query->setParameter('user', $user);
+
+        return $query->getOneOrNullResult();
+    }
 }

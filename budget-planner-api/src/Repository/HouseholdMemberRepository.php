@@ -2,7 +2,10 @@
 
 namespace App\Repository;
 
+use App\Entity\Household;
 use App\Entity\HouseholdMember;
+use App\Entity\User;
+use App\Enum\HouseholdMemberRole;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -40,4 +43,22 @@ class HouseholdMemberRepository extends ServiceEntityRepository
 //            ->getOneOrNullResult()
 //        ;
 //    }
+
+    public function isAdmin(User $user, Household $household): bool
+    {
+        $query = $this->getEntityManager()->createQuery(
+            'SELECT COUNT(m.id)
+             FROM App\Entity\HouseholdMember m
+             WHERE m.user = :user
+             AND m.household = :household
+             AND m.role = :role'
+        );
+        $query->setParameter('user', $user);
+        $query->setParameter('household', $household);
+        $query->setParameter('role', HouseholdMemberRole::Admin->value);
+
+        $count = (int) $query->getSingleScalarResult();
+
+        return $count > 0;
+    }
 }
