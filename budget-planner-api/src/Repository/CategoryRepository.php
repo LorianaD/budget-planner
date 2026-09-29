@@ -42,6 +42,25 @@ class CategoryRepository extends ServiceEntityRepository
 //        ;
 //    }
 
+    /**
+     * @return Category[]
+     */
+    public function findAllForUser(User $user): array
+    {
+        // Fetch-join so the presenter can read the household without extra queries
+        $query = $this->getEntityManager()->createQuery(
+            'SELECT c, h
+             FROM App\Entity\Category c
+             JOIN c.household h
+             JOIN h.householdMembers m
+             WHERE m.user = :user
+             ORDER BY c.name ASC, c.id ASC'
+        );
+        $query->setParameter('user', $user);
+
+        return $query->getResult();
+    }
+
     public function findOneForUser(int $id, User $user): ?Category
     {
         $query = $this->getEntityManager()->createQuery(
@@ -56,5 +75,19 @@ class CategoryRepository extends ServiceEntityRepository
         $query->setParameter('user', $user);
 
         return $query->getOneOrNullResult();
+    }
+
+    public function save(Category $category): void
+    {
+        $entityManager = $this->getEntityManager();
+        $entityManager->persist($category);
+        $entityManager->flush();
+    }
+
+    public function remove(Category $category): void
+    {
+        $entityManager = $this->getEntityManager();
+        $entityManager->remove($category);
+        $entityManager->flush();
     }
 }

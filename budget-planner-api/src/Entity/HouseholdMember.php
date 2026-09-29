@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Enum\HouseholdMemberRole;
 use App\Repository\HouseholdMemberRepository;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -21,8 +22,8 @@ class HouseholdMember
     #[ORM\JoinColumn(nullable: false)]
     private ?Household $household = null;
 
-    #[ORM\Column(length: 20)]
-    private ?string $role = null;
+    #[ORM\Column(length: 20, enumType: HouseholdMemberRole::class)]
+    private ?HouseholdMemberRole $role = null;
 
     public function getId(): ?int
     {
@@ -53,12 +54,12 @@ class HouseholdMember
         return $this;
     }
 
-    public function getRole(): ?string
+    public function getRole(): ?HouseholdMemberRole
     {
         return $this->role;
     }
 
-    public function setRole(string $role): static
+    public function setRole(HouseholdMemberRole $role): static
     {
         $this->role = $role;
 

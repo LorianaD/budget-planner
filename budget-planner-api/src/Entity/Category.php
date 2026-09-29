@@ -23,7 +23,7 @@ class Category
     #[ORM\Column(length: 100)]
     private ?string $name = null;
 
-    #[ORM\Column(length: 100, enumType: CategoryEnvelope::class)]
+    #[ORM\Column(length: 100, nullable: true, enumType: CategoryEnvelope::class)]
     private ?CategoryEnvelope $envelope = null;
 
     /**
@@ -73,12 +73,12 @@ class Category
         return $this;
     }
 
-    public function getEnvelope(): ?string
+    public function getEnvelope(): ?CategoryEnvelope
     {
         return $this->envelope;
     }
 
-    public function setEnvelope(?string $envelope): static
+    public function setEnvelope(?CategoryEnvelope $envelope): static
     {
         $this->envelope = $envelope;
 

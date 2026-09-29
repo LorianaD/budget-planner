@@ -14,7 +14,9 @@ abstract class ApiController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
         if (!is_array($data)) {
-            throw new ValidationException('Le corps de la requête doit être du JSON.');
+            throw new ValidationException(
+                'Le corps de la requête doit être du JSON.'
+            );
         }
 
         return $data;

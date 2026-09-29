@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Household;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -40,4 +41,20 @@ class HouseholdRepository extends ServiceEntityRepository
 //            ->getOneOrNullResult()
 //        ;
 //    }
+
+    // Only returns the household if the user is one of its members
+    public function findOneForUser(int $id, User $user): ?Household
+    {
+        $query = $this->getEntityManager()->createQuery(
+            'SELECT h
+             FROM App\Entity\Household h
+             JOIN h.householdMembers m
+             WHERE h.id = :id
+             AND m.user = :user'
+        );
+        $query->setParameter('id', $id);
+        $query->setParameter('user', $user);
+
+        return $query->getOneOrNullResult();
+    }
 }
