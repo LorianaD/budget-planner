@@ -4,8 +4,8 @@ namespace App\Controller;
 
 use App\Exception\EmailAlreadyUsedException;
 use App\Exception\ValidationException;
-use App\Service\UserProfile;
-use App\Service\UserRegisterService;
+use App\Service\User\UserProfile;
+use App\Service\User\UserRegisterService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -40,9 +40,9 @@ final class RegisterController extends AbstractController
             ], Response::HTTP_CONFLICT);
         }
 
-        return $this->json([
+        return $this->json(
             $userProfile->toArray($user),
             Response::HTTP_CREATED
-        ]);
+        );
     }
 }
