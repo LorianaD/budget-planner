@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -31,11 +33,29 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?string $password = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 200)]
     private ?string $name = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(length: 7, nullable: true)]
     private ?string $colour = null;
+
+    /**
+     * @var Collection<int, HouseholdMember>
+     */
+    #[ORM\OneToMany(targetEntity: HouseholdMember::class, mappedBy: 'user')]
+    private Collection $householdMembers;
+
+    /**
+     * @var Collection<int, Transaction>
+     */
+    #[ORM\OneToMany(targetEntity: Transaction::class, mappedBy: 'user')]
+    private Collection $transactions;
+
+    public function __construct()
+    {
+        $this->householdMembers = new ArrayCollection();
+        $this->transactions = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -138,6 +158,66 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setColour(?string $colour): static
     {
         $this->colour = $colour;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, HouseholdMember>
+     */
+    public function getHouseholdMembers(): Collection
+    {
+        return $this->householdMembers;
+    }
+
+    public function addHouseholdMember(HouseholdMember $householdMember): static
+    {
+        if (!$this->householdMembers->contains($householdMember)) {
+            $this->householdMembers->add($householdMember);
+            $householdMember->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeHouseholdMember(HouseholdMember $householdMember): static
+    {
+        if ($this->householdMembers->removeElement($householdMember)) {
+            // set the owning side to null (unless already changed)
+            if ($householdMember->getUser() === $this) {
+                $householdMember->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Transaction>
+     */
+    public function getTransactions(): Collection
+    {
+        return $this->transactions;
+    }
+
+    public function addTransaction(Transaction $transaction): static
+    {
+        if (!$this->transactions->contains($transaction)) {
+            $this->transactions->add($transaction);
+            $transaction->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTransaction(Transaction $transaction): static
+    {
+        if ($this->transactions->removeElement($transaction)) {
+            // set the owning side to null (unless already changed)
+            if ($transaction->getUser() === $this) {
+                $transaction->setUser(null);
+            }
+        }
 
         return $this;
     }
