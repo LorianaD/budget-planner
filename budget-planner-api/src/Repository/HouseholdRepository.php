@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Household;
+use App\Entity\HouseholdMember;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -56,5 +57,52 @@ class HouseholdRepository extends ServiceEntityRepository
         $query->setParameter('user', $user);
 
         return $query->getOneOrNullResult();
+    }
+
+    /**
+     * @return Household[]
+     */
+    public function findAllForUser(User $user): array
+    {
+        // No fetch-join on m: it is filtered on the user, so it would only load one member
+        $query = $this->getEntityManager()->createQuery(
+            'SELECT h
+             FROM App\Entity\Household h
+             JOIN h.householdMembers m
+             WHERE m.user = :user
+             ORDER BY h.name ASC, h.id ASC'
+        );
+        $query->setParameter('user', $user);
+
+        return $query->getResult();
+    }
+
+    public function save(Household $household): void
+    {
+        $entityManager = $this->getEntityManager();
+        $entityManager->persist($household);
+        $entityManager->flush();
+    }
+
+    // Saves a new household and its first member in the same flush
+    public function saveWithMember(Household $household, HouseholdMember $member): void
+    {
+        $entityManager = $this->getEntityManager();
+        $entityManager->persist($household);
+        $entityManager->persist($member);
+        $entityManager->flush();
+    }
+
+    // Members are removed first, otherwise their foreign key blocks the delete
+    public function remove(Household $household): void
+    {
+        $entityManager = $this->getEntityManager();
+
+        foreach ($household->getHouseholdMembers() as $member) {
+            $entityManager->remove($member);
+        }
+
+        $entityManager->remove($household);
+        $entityManager->flush();
     }
 }

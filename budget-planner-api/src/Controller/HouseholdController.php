@@ -3,30 +3,30 @@
 namespace App\Controller;
 
 use App\Entity\User;
-use App\Service\Account\AccountPresenter;
-use App\Service\Account\AccountService;
+use App\Service\Household\HouseholdPresenter;
+use App\Service\Household\HouseholdService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
-#[Route('/api/accounts', name: 'app_account_')]
-final class AccountController extends ApiController
+#[Route('/api/households', name: 'app_household_')]
+final class HouseholdController extends ApiController
 {
     public function __construct(
-        private AccountService $accountService,
-        private AccountPresenter $accountPresenter,
+        private HouseholdService $householdService,
+        private HouseholdPresenter $householdPresenter,
     )
     {}
 
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(#[CurrentUser] User $user): JsonResponse
     {
-        $accounts = $this->accountService->listForUser($user);
+        $households = $this->householdService->listForUser($user);
 
         return $this->json(
-            $this->accountPresenter->toList($accounts)
+            $this->householdPresenter->toList($households)
         );
     }
 
@@ -34,10 +34,10 @@ final class AccountController extends ApiController
     public function create(Request $request, #[CurrentUser] User $user): JsonResponse
     {
         $data = $this->decodeJson($request);
-        $account = $this->accountService->create($data, $user);
+        $household = $this->householdService->create($data, $user);
 
         return $this->json(
-            $this->accountPresenter->toArray($account),
+            $this->householdPresenter->toArray($household),
             Response::HTTP_CREATED
         );
     }
@@ -45,24 +45,24 @@ final class AccountController extends ApiController
     #[Route('/{id}', name: 'show', methods: ['GET'], requirements: ['id' => '\d+'])]
     public function show(int $id, #[CurrentUser] User $user): JsonResponse
     {
-        $account = $this->accountService->getForUser($id, $user);
+        $household = $this->householdService->getForUser($id, $user);
 
-        return $this->json($this->accountPresenter->toArray($account));
+        return $this->json($this->householdPresenter->toArray($household));
     }
 
     #[Route('/{id}', name: 'edit', methods: ['PATCH'], requirements: ['id' => '\d+'])]
     public function edit(int $id, Request $request, #[CurrentUser] User $user): JsonResponse
     {
         $data = $this->decodeJson($request);
-        $account = $this->accountService->update($id, $data, $user);
+        $household = $this->householdService->update($id, $data, $user);
 
-        return $this->json($this->accountPresenter->toArray($account));
+        return $this->json($this->householdPresenter->toArray($household));
     }
 
     #[Route('/{id}', name: 'delete', methods: ['DELETE'], requirements: ['id' => '\d+'])]
     public function delete(int $id, #[CurrentUser] User $user): JsonResponse
     {
-        $this->accountService->delete($id, $user);
+        $this->householdService->delete($id, $user);
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }

@@ -42,6 +42,25 @@ class AccountRepository extends ServiceEntityRepository
 //        ;
 //    }
 
+    /**
+     * @return Account[]
+     */
+    public function findAllForUser(User $user): array
+    {
+        // Fetch-join so the household can be read without extra queries
+        $query = $this->getEntityManager()->createQuery(
+            'SELECT a, h
+             FROM App\Entity\Account a
+             JOIN a.household h
+             JOIN h.householdMembers m
+             WHERE m.user = :user
+             ORDER BY a.name ASC, a.id ASC'
+        );
+        $query->setParameter('user', $user);
+
+        return $query->getResult();
+    }
+
     public function findOneForUser(int $id, User $user): ?Account
     {
         $query = $this->getEntityManager()->createQuery(
@@ -56,5 +75,19 @@ class AccountRepository extends ServiceEntityRepository
         $query->setParameter('user', $user);
 
         return $query->getOneOrNullResult();
+    }
+
+    public function save(Account $account): void
+    {
+        $entityManager = $this->getEntityManager();
+        $entityManager->persist($account);
+        $entityManager->flush();
+    }
+
+    public function remove(Account $account): void
+    {
+        $entityManager = $this->getEntityManager();
+        $entityManager->remove($account);
+        $entityManager->flush();
     }
 }
