@@ -4,17 +4,19 @@
 namespace App\Service\Household;
 
 use App\Entity\Household;
-use App\Entity\HouseholdMember;
+use App\Service\HouseholdMember\HouseholdMemberPresenter;
 
 // Single place defining which household fields are exposed to the front
 class HouseholdPresenter
 {
+    public function __construct(
+        private HouseholdMemberPresenter $householdMemberPresenter,
+    ) {
+    }
+
     public function toArray(Household $household): array
     {
-        $members = [];
-        foreach ($household->getHouseholdMembers() as $member) {
-            $members[] = $this->memberToArray($member);
-        }
+        $members = $this->householdMemberPresenter->toList($household->getHouseholdMembers());
 
         return [
             'id' => $household->getId(),
@@ -36,15 +38,5 @@ class HouseholdPresenter
         }
 
         return $list;
-    }
-
-    // The email is not exposed: a viewer does not need it
-    private function memberToArray(HouseholdMember $member): array
-    {
-        return [
-            'userId' => $member->getUser()->getId(),
-            'name' => $member->getUser()->getName(),
-            'role' => $member->getRole()->value,
-        ];
     }
 }
