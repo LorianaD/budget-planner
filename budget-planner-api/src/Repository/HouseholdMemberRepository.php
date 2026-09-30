@@ -124,18 +124,4 @@ class HouseholdMemberRepository extends ServiceEntityRepository
 
         return (int) $query->getSingleScalarResult();
     }
-
-    public function save(HouseholdMember $member): void
-    {
-        $entityManager = $this->getEntityManager();
-        $entityManager->persist($member);
-        $entityManager->flush();
-    }
-
-    public function remove(HouseholdMember $member): void
-    {
-        $entityManager = $this->getEntityManager();
-        $entityManager->remove($member);
-        $entityManager->flush();
-    }
 }

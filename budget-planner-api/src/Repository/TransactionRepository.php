@@ -82,18 +82,4 @@ class TransactionRepository extends ServiceEntityRepository
 
         return $query->getOneOrNullResult();
     }
-
-    public function save(Transaction $transaction): void
-    {
-        $entityManager = $this->getEntityManager();
-        $entityManager->persist($transaction);
-        $entityManager->flush();
-    }
-
-    public function remove(Transaction $transaction): void
-    {
-        $entityManager = $this->getEntityManager();
-        $entityManager->remove($transaction);
-        $entityManager->flush();
-    }
 }

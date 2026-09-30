@@ -3,7 +3,6 @@
 namespace App\Repository;
 
 use App\Entity\Household;
-use App\Entity\HouseholdMember;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -75,34 +74,5 @@ class HouseholdRepository extends ServiceEntityRepository
         $query->setParameter('user', $user);
 
         return $query->getResult();
-    }
-
-    public function save(Household $household): void
-    {
-        $entityManager = $this->getEntityManager();
-        $entityManager->persist($household);
-        $entityManager->flush();
-    }
-
-    // Saves a new household and its first member in the same flush
-    public function saveWithMember(Household $household, HouseholdMember $member): void
-    {
-        $entityManager = $this->getEntityManager();
-        $entityManager->persist($household);
-        $entityManager->persist($member);
-        $entityManager->flush();
-    }
-
-    // Members are removed first, otherwise their foreign key blocks the delete
-    public function remove(Household $household): void
-    {
-        $entityManager = $this->getEntityManager();
-
-        foreach ($household->getHouseholdMembers() as $member) {
-            $entityManager->remove($member);
-        }
-
-        $entityManager->remove($household);
-        $entityManager->flush();
     }
 }

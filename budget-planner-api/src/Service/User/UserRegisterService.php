@@ -6,6 +6,7 @@ use App\Entity\User;
 use App\Exception\EmailAlreadyUsedException;
 use App\Exception\ValidationException;
 use App\Repository\UserRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class UserRegisterService
@@ -14,7 +15,8 @@ class UserRegisterService
 
     public function __construct(
         private UserRepository $userRepository,
-        private UserPasswordHasherInterface $passwordHasher
+        private UserPasswordHasherInterface $passwordHasher,
+        private EntityManagerInterface $entityManager
     ) {}
 
     public function register(array $data): User
@@ -26,7 +28,8 @@ class UserRegisterService
         }
 
         $user = $this->createUser($data);
-        $this->userRepository->save($user);
+        $this->entityManager->persist($user);
+        $this->entityManager->flush();
 
         return $user;
     }

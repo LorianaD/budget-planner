@@ -8,13 +8,15 @@ use App\Entity\User;
 use App\Exception\NotFoundException;
 use App\Repository\TransactionRepository;
 use App\Service\Household\HouseholdAccessChecker;
+use Doctrine\ORM\EntityManagerInterface;
 
 class TransactionService
 {
     public function __construct(
         private TransactionRepository $transactionRepository,
         private HouseholdAccessChecker $householdAccessChecker,
-        private TransactionHydrator $transactionHydrator
+        private TransactionHydrator $transactionHydrator,
+        private EntityManagerInterface $entityManager
     ) {
     }
 
@@ -45,7 +47,8 @@ class TransactionService
         $this->transactionHydrator->hydrate($transaction, $data, $user, false);
         $this->assertCanEdit($transaction, $user);
 
-        $this->transactionRepository->save($transaction);
+        $this->entityManager->persist($transaction);
+        $this->entityManager->flush();
 
         return $transaction;
     }
@@ -59,7 +62,8 @@ class TransactionService
         // Checked again in case the transaction was moved to another account
         $this->assertCanEdit($transaction, $user);
 
-        $this->transactionRepository->save($transaction);
+        // Already tracked by Doctrine since it was loaded: flush is enough
+        $this->entityManager->flush();
 
         return $transaction;
     }
@@ -69,7 +73,8 @@ class TransactionService
         $transaction = $this->getForUser($id, $user);
         $this->assertCanEdit($transaction, $user);
 
-        $this->transactionRepository->remove($transaction);
+        $this->entityManager->remove($transaction);
+        $this->entityManager->flush();
     }
 
     // A transaction belongs to the household of its account

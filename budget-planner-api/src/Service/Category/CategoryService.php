@@ -9,13 +9,15 @@ use App\Exception\NotFoundException;
 use App\Exception\ValidationException;
 use App\Repository\CategoryRepository;
 use App\Service\Household\HouseholdAccessChecker;
+use Doctrine\ORM\EntityManagerInterface;
 
 class CategoryService
 {
     public function __construct(
         private CategoryRepository $categoryRepository,
         private HouseholdAccessChecker $householdAccessChecker,
-        private CategoryHydrator $categoryHydrator
+        private CategoryHydrator $categoryHydrator,
+        private EntityManagerInterface $entityManager
     ) {
     }
 
@@ -45,7 +47,8 @@ class CategoryService
         $this->categoryHydrator->hydrate($category, $data, $user, false);
         $this->assertCanEdit($category, $user);
 
-        $this->categoryRepository->save($category);
+        $this->entityManager->persist($category);
+        $this->entityManager->flush();
 
         return $category;
     }
@@ -59,7 +62,8 @@ class CategoryService
         // Checked again in case the category was moved to another household
         $this->assertCanEdit($category, $user);
 
-        $this->categoryRepository->save($category);
+        // Already tracked by Doctrine since it was loaded: flush is enough
+        $this->entityManager->flush();
 
         return $category;
     }
@@ -70,7 +74,8 @@ class CategoryService
         $this->assertCanEdit($category, $user);
         $this->assertIsNotUsed($category);
 
-        $this->categoryRepository->remove($category);
+        $this->entityManager->remove($category);
+        $this->entityManager->flush();
     }
 
     private function assertCanEdit(Category $category, User $user): void

@@ -9,13 +9,15 @@ use App\Exception\NotFoundException;
 use App\Exception\ValidationException;
 use App\Repository\AccountRepository;
 use App\Service\Household\HouseholdAccessChecker;
+use Doctrine\ORM\EntityManagerInterface;
 
 class AccountService
 {
     public function __construct(
         private AccountRepository $accountRepository,
         private HouseholdAccessChecker $householdAccessChecker,
-        private AccountHydrator $accountHydrator
+        private AccountHydrator $accountHydrator,
+        private EntityManagerInterface $entityManager
     ) {
     }
 
@@ -45,7 +47,8 @@ class AccountService
         $this->accountHydrator->hydrate($account, $data, $user, false);
         $this->assertCanEdit($account, $user);
 
-        $this->accountRepository->save($account);
+        $this->entityManager->persist($account);
+        $this->entityManager->flush();
 
         return $account;
     }
@@ -59,7 +62,8 @@ class AccountService
         // Checked again in case the account was moved to another household
         $this->assertCanEdit($account, $user);
 
-        $this->accountRepository->save($account);
+        // Already tracked by Doctrine since it was loaded: flush is enough
+        $this->entityManager->flush();
 
         return $account;
     }
@@ -70,7 +74,8 @@ class AccountService
         $this->assertCanEdit($account, $user);
         $this->assertHasNoTransactions($account);
 
-        $this->accountRepository->remove($account);
+        $this->entityManager->remove($account);
+        $this->entityManager->flush();
     }
 
     private function assertCanEdit(Account $account, User $user): void

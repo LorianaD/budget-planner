@@ -16,6 +16,7 @@ use App\Repository\TransactionRepository;
 use App\Service\Household\HouseholdAccessChecker;
 use App\Service\Transaction\TransactionHydrator;
 use App\Service\Transaction\TransactionService;
+use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 
 final class TransactionServiceTest extends TestCase
@@ -36,7 +37,11 @@ final class TransactionServiceTest extends TestCase
         $transactionRepository = $this->createStub(TransactionRepository::class);
         $transactionRepository->method('findOneForUser')->willReturn(null);
 
-        $service = $this->createService($transactionRepository, $this->createMemberRepository(true));
+        $service = $this->createService(
+            $transactionRepository,
+            $this->createMemberRepository(true),
+            $this->createStub(EntityManagerInterface::class)
+        );
 
         $this->expectException(NotFoundException::class);
 
@@ -45,10 +50,15 @@ final class TransactionServiceTest extends TestCase
 
     public function testAdminCanCreateATransaction(): void
     {
-        $transactionRepository = $this->createMock(TransactionRepository::class);
-        $transactionRepository->expects($this->once())->method('save');
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->once())->method('persist')->with($this->isInstanceOf(Transaction::class));
+        $entityManager->expects($this->once())->method('flush');
 
-        $service = $this->createService($transactionRepository, $this->createMemberRepository(true));
+        $service = $this->createService(
+            $this->createStub(TransactionRepository::class),
+            $this->createMemberRepository(true),
+            $entityManager
+        );
 
         $transaction = $service->create($this->validData(), $this->user);
 
@@ -59,10 +69,14 @@ final class TransactionServiceTest extends TestCase
 
     public function testViewerCannotCreateATransaction(): void
     {
-        $transactionRepository = $this->createMock(TransactionRepository::class);
-        $transactionRepository->expects($this->never())->method('save');
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->never())->method('flush');
 
-        $service = $this->createService($transactionRepository, $this->createMemberRepository(false));
+        $service = $this->createService(
+            $this->createStub(TransactionRepository::class),
+            $this->createMemberRepository(false),
+            $entityManager
+        );
 
         $this->expectException(ForbiddenException::class);
 
@@ -72,11 +86,13 @@ final class TransactionServiceTest extends TestCase
     public function testAdminCanUpdateATransaction(): void
     {
         $transaction = $this->createTransaction();
-        $transactionRepository = $this->createMock(TransactionRepository::class);
+        $transactionRepository = $this->createStub(TransactionRepository::class);
         $transactionRepository->method('findOneForUser')->willReturn($transaction);
-        $transactionRepository->expects($this->once())->method('save')->with($transaction);
 
-        $service = $this->createService($transactionRepository, $this->createMemberRepository(true));
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->once())->method('flush');
+
+        $service = $this->createService($transactionRepository, $this->createMemberRepository(true), $entityManager);
 
         $service->update(1, ['label' => 'Loyer'], $this->user);
 
@@ -86,11 +102,13 @@ final class TransactionServiceTest extends TestCase
     public function testViewerCannotUpdateATransaction(): void
     {
         $transaction = $this->createTransaction();
-        $transactionRepository = $this->createMock(TransactionRepository::class);
+        $transactionRepository = $this->createStub(TransactionRepository::class);
         $transactionRepository->method('findOneForUser')->willReturn($transaction);
-        $transactionRepository->expects($this->never())->method('save');
 
-        $service = $this->createService($transactionRepository, $this->createMemberRepository(false));
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->never())->method('flush');
+
+        $service = $this->createService($transactionRepository, $this->createMemberRepository(false), $entityManager);
 
         try {
             $service->update(1, ['label' => 'Loyer'], $this->user);
@@ -104,15 +122,17 @@ final class TransactionServiceTest extends TestCase
     public function testUpdateIsRefusedWhenTheTransactionIsMovedToAReadOnlyAccount(): void
     {
         $transaction = $this->createTransaction();
-        $transactionRepository = $this->createMock(TransactionRepository::class);
+        $transactionRepository = $this->createStub(TransactionRepository::class);
         $transactionRepository->method('findOneForUser')->willReturn($transaction);
-        $transactionRepository->expects($this->never())->method('save');
 
         // Admin of the current household, but only viewer of the target account's household
         $memberRepository = $this->createStub(HouseholdMemberRepository::class);
         $memberRepository->method('isAdmin')->willReturn(true, false);
 
-        $service = $this->createService($transactionRepository, $memberRepository);
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->never())->method('flush');
+
+        $service = $this->createService($transactionRepository, $memberRepository, $entityManager);
 
         $this->expectException(ForbiddenException::class);
 
@@ -122,11 +142,14 @@ final class TransactionServiceTest extends TestCase
     public function testAdminCanDeleteATransaction(): void
     {
         $transaction = $this->createTransaction();
-        $transactionRepository = $this->createMock(TransactionRepository::class);
+        $transactionRepository = $this->createStub(TransactionRepository::class);
         $transactionRepository->method('findOneForUser')->willReturn($transaction);
-        $transactionRepository->expects($this->once())->method('remove')->with($transaction);
 
-        $service = $this->createService($transactionRepository, $this->createMemberRepository(true));
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->once())->method('remove')->with($transaction);
+        $entityManager->expects($this->once())->method('flush');
+
+        $service = $this->createService($transactionRepository, $this->createMemberRepository(true), $entityManager);
 
         $service->delete(1, $this->user);
     }
@@ -134,11 +157,13 @@ final class TransactionServiceTest extends TestCase
     public function testViewerCannotDeleteATransaction(): void
     {
         $transaction = $this->createTransaction();
-        $transactionRepository = $this->createMock(TransactionRepository::class);
+        $transactionRepository = $this->createStub(TransactionRepository::class);
         $transactionRepository->method('findOneForUser')->willReturn($transaction);
-        $transactionRepository->expects($this->never())->method('remove');
 
-        $service = $this->createService($transactionRepository, $this->createMemberRepository(false));
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->never())->method('remove');
+
+        $service = $this->createService($transactionRepository, $this->createMemberRepository(false), $entityManager);
 
         $this->expectException(ForbiddenException::class);
 
@@ -182,7 +207,8 @@ final class TransactionServiceTest extends TestCase
     // Uses the real hydrator: only the database access is replaced by stubs
     private function createService(
         TransactionRepository $transactionRepository,
-        HouseholdMemberRepository $memberRepository
+        HouseholdMemberRepository $memberRepository,
+        EntityManagerInterface $entityManager
     ): TransactionService {
         $accountRepository = $this->createStub(AccountRepository::class);
         $accountRepository->method('findOneForUser')->willReturn($this->account);
@@ -192,6 +218,11 @@ final class TransactionServiceTest extends TestCase
 
         $hydrator = new TransactionHydrator($accountRepository, $categoryRepository);
 
-        return new TransactionService($transactionRepository, new HouseholdAccessChecker($memberRepository), $hydrator);
+        return new TransactionService(
+            $transactionRepository,
+            new HouseholdAccessChecker($memberRepository),
+            $hydrator,
+            $entityManager
+        );
     }
 }

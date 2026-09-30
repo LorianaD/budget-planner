@@ -76,18 +76,4 @@ class CategoryRepository extends ServiceEntityRepository
 
         return $query->getOneOrNullResult();
     }
-
-    public function save(Category $category): void
-    {
-        $entityManager = $this->getEntityManager();
-        $entityManager->persist($category);
-        $entityManager->flush();
-    }
-
-    public function remove(Category $category): void
-    {
-        $entityManager = $this->getEntityManager();
-        $entityManager->remove($category);
-        $entityManager->flush();
-    }
 }

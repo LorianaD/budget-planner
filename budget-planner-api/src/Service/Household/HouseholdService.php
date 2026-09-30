@@ -10,13 +10,15 @@ use App\Enum\HouseholdMemberRole;
 use App\Exception\NotFoundException;
 use App\Exception\ValidationException;
 use App\Repository\HouseholdRepository;
+use Doctrine\ORM\EntityManagerInterface;
 
 class HouseholdService
 {
     public function __construct(
         private HouseholdRepository $householdRepository,
         private HouseholdAccessChecker $householdAccessChecker,
-        private HouseholdHydrator $householdHydrator
+        private HouseholdHydrator $householdHydrator,
+        private EntityManagerInterface $entityManager
     ) {
     }
 
@@ -50,7 +52,10 @@ class HouseholdService
         $member->setRole(HouseholdMemberRole::Admin);
         $household->addHouseholdMember($member);
 
-        $this->householdRepository->saveWithMember($household, $member);
+        // Same flush: the household and its first member are saved in one transaction
+        $this->entityManager->persist($household);
+        $this->entityManager->persist($member);
+        $this->entityManager->flush();
 
         return $household;
     }
@@ -62,7 +67,8 @@ class HouseholdService
 
         $this->householdHydrator->hydrate($household, $data, true);
 
-        $this->householdRepository->save($household);
+        // Already tracked by Doctrine since it was loaded: flush is enough
+        $this->entityManager->flush();
 
         return $household;
     }
@@ -73,7 +79,13 @@ class HouseholdService
         $this->householdAccessChecker->assertIsAdmin($user, $household);
         $this->assertIsEmpty($household);
 
-        $this->householdRepository->remove($household);
+        // Members are removed first, otherwise their foreign key blocks the delete
+        foreach ($household->getHouseholdMembers() as $member) {
+            $this->entityManager->remove($member);
+        }
+
+        $this->entityManager->remove($household);
+        $this->entityManager->flush();
     }
 
     // Deleting the accounts, categories and scenarios must be an explicit choice of the user

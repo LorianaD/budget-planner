@@ -83,11 +83,4 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
         return $query->getOneOrNullResult();
     }
-
-    public function save(User $user): void
-    {
-        $entityManager = $this->getEntityManager();
-        $entityManager->persist($user);
-        $entityManager->flush();
-    }
 }

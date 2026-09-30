@@ -15,6 +15,7 @@ use App\Repository\HouseholdRepository;
 use App\Service\Category\CategoryHydrator;
 use App\Service\Category\CategoryService;
 use App\Service\Household\HouseholdAccessChecker;
+use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 
 final class CategoryServiceTest extends TestCase
@@ -34,7 +35,11 @@ final class CategoryServiceTest extends TestCase
         $categoryRepository = $this->createStub(CategoryRepository::class);
         $categoryRepository->method('findOneForUser')->willReturn($category);
 
-        $service = $this->createService($categoryRepository, $this->createMemberRepository(true));
+        $service = $this->createService(
+            $categoryRepository,
+            $this->createMemberRepository(true),
+            $this->createStub(EntityManagerInterface::class)
+        );
 
         self::assertSame($category, $service->getForUser(1, $this->user));
     }
@@ -44,7 +49,11 @@ final class CategoryServiceTest extends TestCase
         $categoryRepository = $this->createStub(CategoryRepository::class);
         $categoryRepository->method('findOneForUser')->willReturn(null);
 
-        $service = $this->createService($categoryRepository, $this->createMemberRepository(true));
+        $service = $this->createService(
+            $categoryRepository,
+            $this->createMemberRepository(true),
+            $this->createStub(EntityManagerInterface::class)
+        );
 
         $this->expectException(NotFoundException::class);
 
@@ -53,10 +62,15 @@ final class CategoryServiceTest extends TestCase
 
     public function testAdminCanCreateACategory(): void
     {
-        $categoryRepository = $this->createMock(CategoryRepository::class);
-        $categoryRepository->expects($this->once())->method('save');
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->once())->method('persist')->with($this->isInstanceOf(Category::class));
+        $entityManager->expects($this->once())->method('flush');
 
-        $service = $this->createService($categoryRepository, $this->createMemberRepository(true));
+        $service = $this->createService(
+            $this->createStub(CategoryRepository::class),
+            $this->createMemberRepository(true),
+            $entityManager
+        );
 
         $category = $service->create(['householdId' => 1, 'name' => 'Loisirs'], $this->user);
 
@@ -66,10 +80,14 @@ final class CategoryServiceTest extends TestCase
 
     public function testViewerCannotCreateACategory(): void
     {
-        $categoryRepository = $this->createMock(CategoryRepository::class);
-        $categoryRepository->expects($this->never())->method('save');
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->never())->method('flush');
 
-        $service = $this->createService($categoryRepository, $this->createMemberRepository(false));
+        $service = $this->createService(
+            $this->createStub(CategoryRepository::class),
+            $this->createMemberRepository(false),
+            $entityManager
+        );
 
         $this->expectException(ForbiddenException::class);
 
@@ -79,11 +97,13 @@ final class CategoryServiceTest extends TestCase
     public function testAdminCanUpdateACategory(): void
     {
         $category = $this->createCategory();
-        $categoryRepository = $this->createMock(CategoryRepository::class);
+        $categoryRepository = $this->createStub(CategoryRepository::class);
         $categoryRepository->method('findOneForUser')->willReturn($category);
-        $categoryRepository->expects($this->once())->method('save')->with($category);
 
-        $service = $this->createService($categoryRepository, $this->createMemberRepository(true));
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->once())->method('flush');
+
+        $service = $this->createService($categoryRepository, $this->createMemberRepository(true), $entityManager);
 
         $updatedCategory = $service->update(1, ['name' => 'Nouveau nom'], $this->user);
 
@@ -93,11 +113,13 @@ final class CategoryServiceTest extends TestCase
     public function testViewerCannotUpdateACategory(): void
     {
         $category = $this->createCategory();
-        $categoryRepository = $this->createMock(CategoryRepository::class);
+        $categoryRepository = $this->createStub(CategoryRepository::class);
         $categoryRepository->method('findOneForUser')->willReturn($category);
-        $categoryRepository->expects($this->never())->method('save');
 
-        $service = $this->createService($categoryRepository, $this->createMemberRepository(false));
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->never())->method('flush');
+
+        $service = $this->createService($categoryRepository, $this->createMemberRepository(false), $entityManager);
 
         try {
             $service->update(1, ['name' => 'Nouveau nom'], $this->user);
@@ -111,15 +133,17 @@ final class CategoryServiceTest extends TestCase
     public function testUpdateIsRefusedWhenTheCategoryIsMovedToAReadOnlyHousehold(): void
     {
         $category = $this->createCategory();
-        $categoryRepository = $this->createMock(CategoryRepository::class);
+        $categoryRepository = $this->createStub(CategoryRepository::class);
         $categoryRepository->method('findOneForUser')->willReturn($category);
-        $categoryRepository->expects($this->never())->method('save');
 
         // Admin of the current household, but only viewer of the target household
         $memberRepository = $this->createStub(HouseholdMemberRepository::class);
         $memberRepository->method('isAdmin')->willReturn(true, false);
 
-        $service = $this->createService($categoryRepository, $memberRepository);
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->never())->method('flush');
+
+        $service = $this->createService($categoryRepository, $memberRepository, $entityManager);
 
         $this->expectException(ForbiddenException::class);
 
@@ -129,11 +153,14 @@ final class CategoryServiceTest extends TestCase
     public function testAdminCanDeleteAnUnusedCategory(): void
     {
         $category = $this->createCategory();
-        $categoryRepository = $this->createMock(CategoryRepository::class);
+        $categoryRepository = $this->createStub(CategoryRepository::class);
         $categoryRepository->method('findOneForUser')->willReturn($category);
-        $categoryRepository->expects($this->once())->method('remove')->with($category);
 
-        $service = $this->createService($categoryRepository, $this->createMemberRepository(true));
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->once())->method('remove')->with($category);
+        $entityManager->expects($this->once())->method('flush');
+
+        $service = $this->createService($categoryRepository, $this->createMemberRepository(true), $entityManager);
 
         $service->delete(1, $this->user);
     }
@@ -143,11 +170,13 @@ final class CategoryServiceTest extends TestCase
         $category = $this->createCategory();
         $category->addTransaction(new Transaction());
 
-        $categoryRepository = $this->createMock(CategoryRepository::class);
+        $categoryRepository = $this->createStub(CategoryRepository::class);
         $categoryRepository->method('findOneForUser')->willReturn($category);
-        $categoryRepository->expects($this->never())->method('remove');
 
-        $service = $this->createService($categoryRepository, $this->createMemberRepository(true));
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->never())->method('remove');
+
+        $service = $this->createService($categoryRepository, $this->createMemberRepository(true), $entityManager);
 
         $this->expectException(ValidationException::class);
 
@@ -157,11 +186,13 @@ final class CategoryServiceTest extends TestCase
     public function testViewerCannotDeleteACategory(): void
     {
         $category = $this->createCategory();
-        $categoryRepository = $this->createMock(CategoryRepository::class);
+        $categoryRepository = $this->createStub(CategoryRepository::class);
         $categoryRepository->method('findOneForUser')->willReturn($category);
-        $categoryRepository->expects($this->never())->method('remove');
 
-        $service = $this->createService($categoryRepository, $this->createMemberRepository(false));
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->never())->method('remove');
+
+        $service = $this->createService($categoryRepository, $this->createMemberRepository(false), $entityManager);
 
         $this->expectException(ForbiddenException::class);
 
@@ -188,13 +219,19 @@ final class CategoryServiceTest extends TestCase
     // Uses the real hydrator: only the database access is replaced by a stub
     private function createService(
         CategoryRepository $categoryRepository,
-        HouseholdMemberRepository $memberRepository
+        HouseholdMemberRepository $memberRepository,
+        EntityManagerInterface $entityManager
     ): CategoryService {
         $householdRepository = $this->createStub(HouseholdRepository::class);
         $householdRepository->method('findOneForUser')->willReturn($this->household);
 
         $hydrator = new CategoryHydrator($householdRepository);
 
-        return new CategoryService($categoryRepository, new HouseholdAccessChecker($memberRepository), $hydrator);
+        return new CategoryService(
+            $categoryRepository,
+            new HouseholdAccessChecker($memberRepository),
+            $hydrator,
+            $entityManager
+        );
     }
 }

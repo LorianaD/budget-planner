@@ -5,6 +5,7 @@ namespace App\Tests\Service\Household;
 use App\Entity\Account;
 use App\Entity\Category;
 use App\Entity\Household;
+use App\Entity\HouseholdMember;
 use App\Entity\User;
 use App\Enum\HouseholdMemberRole;
 use App\Exception\ForbiddenException;
@@ -15,6 +16,7 @@ use App\Repository\HouseholdRepository;
 use App\Service\Household\HouseholdAccessChecker;
 use App\Service\Household\HouseholdHydrator;
 use App\Service\Household\HouseholdService;
+use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -32,7 +34,11 @@ final class HouseholdServiceTest extends TestCase
         $householdRepository = $this->createStub(HouseholdRepository::class);
         $householdRepository->method('findOneForUser')->willReturn(null);
 
-        $service = $this->createService($householdRepository, $this->createMemberRepository(true));
+        $service = $this->createService(
+            $householdRepository,
+            $this->createMemberRepository(true),
+            $this->createStub(EntityManagerInterface::class)
+        );
 
         $this->expectException(NotFoundException::class);
 
@@ -41,10 +47,16 @@ final class HouseholdServiceTest extends TestCase
 
     public function testCreatorBecomesAdminOfTheNewHousehold(): void
     {
-        $householdRepository = $this->createMock(HouseholdRepository::class);
-        $householdRepository->expects($this->once())->method('saveWithMember');
+        // The household and its first member are persisted, then saved in a single flush
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->exactly(2))->method('persist');
+        $entityManager->expects($this->once())->method('flush');
 
-        $service = $this->createService($householdRepository, $this->createMemberRepository(false));
+        $service = $this->createService(
+            $this->createStub(HouseholdRepository::class),
+            $this->createMemberRepository(false),
+            $entityManager
+        );
 
         $household = $service->create(['name' => 'Famille Martin'], $this->user);
 
@@ -58,10 +70,14 @@ final class HouseholdServiceTest extends TestCase
 
     public function testCreationWithoutNameIsNotSaved(): void
     {
-        $householdRepository = $this->createMock(HouseholdRepository::class);
-        $householdRepository->expects($this->never())->method('saveWithMember');
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->never())->method('flush');
 
-        $service = $this->createService($householdRepository, $this->createMemberRepository(true));
+        $service = $this->createService(
+            $this->createStub(HouseholdRepository::class),
+            $this->createMemberRepository(true),
+            $entityManager
+        );
 
         $this->expectException(ValidationException::class);
 
@@ -71,11 +87,13 @@ final class HouseholdServiceTest extends TestCase
     public function testAdminCanRenameTheHousehold(): void
     {
         $household = $this->createHousehold();
-        $householdRepository = $this->createMock(HouseholdRepository::class);
+        $householdRepository = $this->createStub(HouseholdRepository::class);
         $householdRepository->method('findOneForUser')->willReturn($household);
-        $householdRepository->expects($this->once())->method('save')->with($household);
 
-        $service = $this->createService($householdRepository, $this->createMemberRepository(true));
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->once())->method('flush');
+
+        $service = $this->createService($householdRepository, $this->createMemberRepository(true), $entityManager);
 
         $service->update(1, ['name' => 'Famille Dupont'], $this->user);
 
@@ -85,11 +103,13 @@ final class HouseholdServiceTest extends TestCase
     public function testViewerCannotRenameTheHousehold(): void
     {
         $household = $this->createHousehold();
-        $householdRepository = $this->createMock(HouseholdRepository::class);
+        $householdRepository = $this->createStub(HouseholdRepository::class);
         $householdRepository->method('findOneForUser')->willReturn($household);
-        $householdRepository->expects($this->never())->method('save');
 
-        $service = $this->createService($householdRepository, $this->createMemberRepository(false));
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->never())->method('flush');
+
+        $service = $this->createService($householdRepository, $this->createMemberRepository(false), $entityManager);
 
         $this->expectException(ForbiddenException::class);
 
@@ -99,11 +119,18 @@ final class HouseholdServiceTest extends TestCase
     public function testAdminCanDeleteAnEmptyHousehold(): void
     {
         $household = $this->createHousehold();
-        $householdRepository = $this->createMock(HouseholdRepository::class);
-        $householdRepository->method('findOneForUser')->willReturn($household);
-        $householdRepository->expects($this->once())->method('remove')->with($household);
+        $member = new HouseholdMember();
+        $household->addHouseholdMember($member);
 
-        $service = $this->createService($householdRepository, $this->createMemberRepository(true));
+        $householdRepository = $this->createStub(HouseholdRepository::class);
+        $householdRepository->method('findOneForUser')->willReturn($household);
+
+        // The member is removed before the household, both in the same flush
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->exactly(2))->method('remove');
+        $entityManager->expects($this->once())->method('flush');
+
+        $service = $this->createService($householdRepository, $this->createMemberRepository(true), $entityManager);
 
         $service->delete(1, $this->user);
     }
@@ -129,11 +156,13 @@ final class HouseholdServiceTest extends TestCase
             $household->addCategory(new Category());
         }
 
-        $householdRepository = $this->createMock(HouseholdRepository::class);
+        $householdRepository = $this->createStub(HouseholdRepository::class);
         $householdRepository->method('findOneForUser')->willReturn($household);
-        $householdRepository->expects($this->never())->method('remove');
 
-        $service = $this->createService($householdRepository, $this->createMemberRepository(true));
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->never())->method('remove');
+
+        $service = $this->createService($householdRepository, $this->createMemberRepository(true), $entityManager);
 
         $this->expectException(ValidationException::class);
 
@@ -143,11 +172,13 @@ final class HouseholdServiceTest extends TestCase
     public function testViewerCannotDeleteTheHousehold(): void
     {
         $household = $this->createHousehold();
-        $householdRepository = $this->createMock(HouseholdRepository::class);
+        $householdRepository = $this->createStub(HouseholdRepository::class);
         $householdRepository->method('findOneForUser')->willReturn($household);
-        $householdRepository->expects($this->never())->method('remove');
 
-        $service = $this->createService($householdRepository, $this->createMemberRepository(false));
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->never())->method('remove');
+
+        $service = $this->createService($householdRepository, $this->createMemberRepository(false), $entityManager);
 
         $this->expectException(ForbiddenException::class);
 
@@ -172,12 +203,14 @@ final class HouseholdServiceTest extends TestCase
 
     private function createService(
         HouseholdRepository $householdRepository,
-        HouseholdMemberRepository $memberRepository
+        HouseholdMemberRepository $memberRepository,
+        EntityManagerInterface $entityManager
     ): HouseholdService {
         return new HouseholdService(
             $householdRepository,
             new HouseholdAccessChecker($memberRepository),
-            new HouseholdHydrator()
+            new HouseholdHydrator(),
+            $entityManager
         );
     }
 }

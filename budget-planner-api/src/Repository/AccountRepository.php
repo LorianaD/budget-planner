@@ -76,18 +76,4 @@ class AccountRepository extends ServiceEntityRepository
 
         return $query->getOneOrNullResult();
     }
-
-    public function save(Account $account): void
-    {
-        $entityManager = $this->getEntityManager();
-        $entityManager->persist($account);
-        $entityManager->flush();
-    }
-
-    public function remove(Account $account): void
-    {
-        $entityManager = $this->getEntityManager();
-        $entityManager->remove($account);
-        $entityManager->flush();
-    }
 }

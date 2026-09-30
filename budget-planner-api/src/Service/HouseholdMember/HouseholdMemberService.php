@@ -13,6 +13,7 @@ use App\Repository\HouseholdMemberRepository;
 use App\Service\Household\HouseholdAccessChecker;
 use App\Service\Household\HouseholdService;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Doctrine\ORM\EntityManagerInterface;
 
 class HouseholdMemberService
 {
@@ -22,7 +23,8 @@ class HouseholdMemberService
         private HouseholdService $householdService,
         private HouseholdAccessChecker $householdAccessChecker,
         private HouseholdMemberRepository $householdMemberRepository,
-        private HouseholdMemberHydrator $householdMemberHydrator
+        private HouseholdMemberHydrator $householdMemberHydrator,
+        private EntityManagerInterface $entityManager
     ) {
     }
 
@@ -46,9 +48,11 @@ class HouseholdMemberService
         $this->assertIsNotAlreadyMember($member->getUser(), $household);
 
         $household->addHouseholdMember($member);
+        $this->entityManager->persist($member);
 
         try {
-            $this->householdMemberRepository->save($member);
+            // The SQL insert, and so the unique index check, happens on flush
+            $this->entityManager->flush();
         } catch (UniqueConstraintViolationException) {
             // Two requests at the same time (double click): the database refused the second one
             throw new ValidationException(self::ALREADY_MEMBER_MESSAGE);
@@ -71,7 +75,8 @@ class HouseholdMemberService
             $this->assertIsNotLastAdmin($household);
         }
 
-        $this->householdMemberRepository->save($member);
+        // Already tracked by Doctrine since it was loaded: flush is enough
+        $this->entityManager->flush();
 
         return $member;
     }
@@ -92,7 +97,8 @@ class HouseholdMemberService
             $this->assertIsNotLastAdmin($household);
         }
 
-        $this->householdMemberRepository->remove($member);
+        $this->entityManager->remove($member);
+        $this->entityManager->flush();
     }
 
     private function getMember(int $memberId, Household $household): HouseholdMember

@@ -15,6 +15,7 @@ use App\Repository\HouseholdRepository;
 use App\Service\Account\AccountHydrator;
 use App\Service\Account\AccountService;
 use App\Service\Household\HouseholdAccessChecker;
+use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 
 final class AccountServiceTest extends TestCase
@@ -33,7 +34,11 @@ final class AccountServiceTest extends TestCase
         $accountRepository = $this->createStub(AccountRepository::class);
         $accountRepository->method('findOneForUser')->willReturn(null);
 
-        $service = $this->createService($accountRepository, $this->createMemberRepository(true));
+        $service = $this->createService(
+            $accountRepository,
+            $this->createMemberRepository(true),
+            $this->createStub(EntityManagerInterface::class)
+        );
 
         $this->expectException(NotFoundException::class);
 
@@ -42,10 +47,15 @@ final class AccountServiceTest extends TestCase
 
     public function testAdminCanCreateAnAccount(): void
     {
-        $accountRepository = $this->createMock(AccountRepository::class);
-        $accountRepository->expects($this->once())->method('save');
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->once())->method('persist')->with($this->isInstanceOf(Account::class));
+        $entityManager->expects($this->once())->method('flush');
 
-        $service = $this->createService($accountRepository, $this->createMemberRepository(true));
+        $service = $this->createService(
+            $this->createStub(AccountRepository::class),
+            $this->createMemberRepository(true),
+            $entityManager
+        );
 
         $account = $service->create(['householdId' => 1, 'name' => 'Livret A', 'type' => 'savings'], $this->user);
 
@@ -55,10 +65,14 @@ final class AccountServiceTest extends TestCase
 
     public function testViewerCannotCreateAnAccount(): void
     {
-        $accountRepository = $this->createMock(AccountRepository::class);
-        $accountRepository->expects($this->never())->method('save');
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->never())->method('flush');
 
-        $service = $this->createService($accountRepository, $this->createMemberRepository(false));
+        $service = $this->createService(
+            $this->createStub(AccountRepository::class),
+            $this->createMemberRepository(false),
+            $entityManager
+        );
 
         $this->expectException(ForbiddenException::class);
 
@@ -68,11 +82,13 @@ final class AccountServiceTest extends TestCase
     public function testAdminCanUpdateAnAccount(): void
     {
         $account = $this->createAccount();
-        $accountRepository = $this->createMock(AccountRepository::class);
+        $accountRepository = $this->createStub(AccountRepository::class);
         $accountRepository->method('findOneForUser')->willReturn($account);
-        $accountRepository->expects($this->once())->method('save')->with($account);
 
-        $service = $this->createService($accountRepository, $this->createMemberRepository(true));
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->once())->method('flush');
+
+        $service = $this->createService($accountRepository, $this->createMemberRepository(true), $entityManager);
 
         $service->update(1, ['initialBalance' => '-50'], $this->user);
 
@@ -82,11 +98,13 @@ final class AccountServiceTest extends TestCase
     public function testViewerCannotUpdateAnAccount(): void
     {
         $account = $this->createAccount();
-        $accountRepository = $this->createMock(AccountRepository::class);
+        $accountRepository = $this->createStub(AccountRepository::class);
         $accountRepository->method('findOneForUser')->willReturn($account);
-        $accountRepository->expects($this->never())->method('save');
 
-        $service = $this->createService($accountRepository, $this->createMemberRepository(false));
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->never())->method('flush');
+
+        $service = $this->createService($accountRepository, $this->createMemberRepository(false), $entityManager);
 
         try {
             $service->update(1, ['name' => 'Nouveau nom'], $this->user);
@@ -100,15 +118,17 @@ final class AccountServiceTest extends TestCase
     public function testUpdateIsRefusedWhenTheAccountIsMovedToAReadOnlyHousehold(): void
     {
         $account = $this->createAccount();
-        $accountRepository = $this->createMock(AccountRepository::class);
+        $accountRepository = $this->createStub(AccountRepository::class);
         $accountRepository->method('findOneForUser')->willReturn($account);
-        $accountRepository->expects($this->never())->method('save');
 
         // Admin of the current household, but only viewer of the target household
         $memberRepository = $this->createStub(HouseholdMemberRepository::class);
         $memberRepository->method('isAdmin')->willReturn(true, false);
 
-        $service = $this->createService($accountRepository, $memberRepository);
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->never())->method('flush');
+
+        $service = $this->createService($accountRepository, $memberRepository, $entityManager);
 
         $this->expectException(ForbiddenException::class);
 
@@ -118,11 +138,14 @@ final class AccountServiceTest extends TestCase
     public function testAdminCanDeleteAnEmptyAccount(): void
     {
         $account = $this->createAccount();
-        $accountRepository = $this->createMock(AccountRepository::class);
+        $accountRepository = $this->createStub(AccountRepository::class);
         $accountRepository->method('findOneForUser')->willReturn($account);
-        $accountRepository->expects($this->once())->method('remove')->with($account);
 
-        $service = $this->createService($accountRepository, $this->createMemberRepository(true));
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->once())->method('remove')->with($account);
+        $entityManager->expects($this->once())->method('flush');
+
+        $service = $this->createService($accountRepository, $this->createMemberRepository(true), $entityManager);
 
         $service->delete(1, $this->user);
     }
@@ -132,11 +155,13 @@ final class AccountServiceTest extends TestCase
         $account = $this->createAccount();
         $account->addTransaction(new Transaction());
 
-        $accountRepository = $this->createMock(AccountRepository::class);
+        $accountRepository = $this->createStub(AccountRepository::class);
         $accountRepository->method('findOneForUser')->willReturn($account);
-        $accountRepository->expects($this->never())->method('remove');
 
-        $service = $this->createService($accountRepository, $this->createMemberRepository(true));
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->never())->method('remove');
+
+        $service = $this->createService($accountRepository, $this->createMemberRepository(true), $entityManager);
 
         $this->expectException(ValidationException::class);
 
@@ -146,11 +171,13 @@ final class AccountServiceTest extends TestCase
     public function testViewerCannotDeleteAnAccount(): void
     {
         $account = $this->createAccount();
-        $accountRepository = $this->createMock(AccountRepository::class);
+        $accountRepository = $this->createStub(AccountRepository::class);
         $accountRepository->method('findOneForUser')->willReturn($account);
-        $accountRepository->expects($this->never())->method('remove');
 
-        $service = $this->createService($accountRepository, $this->createMemberRepository(false));
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects($this->never())->method('remove');
+
+        $service = $this->createService($accountRepository, $this->createMemberRepository(false), $entityManager);
 
         $this->expectException(ForbiddenException::class);
 
@@ -178,13 +205,19 @@ final class AccountServiceTest extends TestCase
     // Uses the real hydrator: only the database access is replaced by a stub
     private function createService(
         AccountRepository $accountRepository,
-        HouseholdMemberRepository $memberRepository
+        HouseholdMemberRepository $memberRepository,
+        EntityManagerInterface $entityManager
     ): AccountService {
         $householdRepository = $this->createStub(HouseholdRepository::class);
         $householdRepository->method('findOneForUser')->willReturn($this->household);
 
         $hydrator = new AccountHydrator($householdRepository);
 
-        return new AccountService($accountRepository, new HouseholdAccessChecker($memberRepository), $hydrator);
+        return new AccountService(
+            $accountRepository,
+            new HouseholdAccessChecker($memberRepository),
+            $hydrator,
+            $entityManager
+        );
     }
 }
