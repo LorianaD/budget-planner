@@ -7,17 +7,15 @@ use App\Entity\Household;
 use App\Entity\HouseholdMember;
 use App\Entity\User;
 use App\Enum\HouseholdMemberRole;
-use App\Exception\ForbiddenException;
 use App\Exception\NotFoundException;
 use App\Exception\ValidationException;
-use App\Repository\HouseholdMemberRepository;
 use App\Repository\HouseholdRepository;
 
 class HouseholdService
 {
     public function __construct(
         private HouseholdRepository $householdRepository,
-        private HouseholdMemberRepository $householdMemberRepository,
+        private HouseholdAccessChecker $householdAccessChecker,
         private HouseholdHydrator $householdHydrator
     ) {
     }
@@ -60,7 +58,7 @@ class HouseholdService
     public function update(int $id, array $data, User $user): Household
     {
         $household = $this->getForUser($id, $user);
-        $this->assertCanEdit($household, $user);
+        $this->householdAccessChecker->assertIsAdmin($user, $household);
 
         $this->householdHydrator->hydrate($household, $data, true);
 
@@ -72,18 +70,10 @@ class HouseholdService
     public function delete(int $id, User $user): void
     {
         $household = $this->getForUser($id, $user);
-        $this->assertCanEdit($household, $user);
+        $this->householdAccessChecker->assertIsAdmin($user, $household);
         $this->assertIsEmpty($household);
 
         $this->householdRepository->remove($household);
-    }
-
-    // Viewers can read the household data but never modify it
-    private function assertCanEdit(Household $household, User $user): void
-    {
-        if (!$this->householdMemberRepository->isAdmin($user, $household)) {
-            throw new ForbiddenException('Vous avez un accès en lecture seule à ce foyer.');
-        }
     }
 
     // Deleting the accounts, categories and scenarios must be an explicit choice of the user

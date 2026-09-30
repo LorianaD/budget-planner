@@ -7,16 +7,20 @@ use App\Entity\Household;
 use App\Entity\HouseholdMember;
 use App\Entity\User;
 use App\Enum\HouseholdMemberRole;
-use App\Exception\ForbiddenException;
 use App\Exception\NotFoundException;
 use App\Exception\ValidationException;
 use App\Repository\HouseholdMemberRepository;
+use App\Service\Household\HouseholdAccessChecker;
 use App\Service\Household\HouseholdService;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 
 class HouseholdMemberService
 {
+    private const ALREADY_MEMBER_MESSAGE = 'Cette personne fait déjà partie du foyer.';
+
     public function __construct(
         private HouseholdService $householdService,
+        private HouseholdAccessChecker $householdAccessChecker,
         private HouseholdMemberRepository $householdMemberRepository,
         private HouseholdMemberHydrator $householdMemberHydrator
     ) {
@@ -35,14 +39,20 @@ class HouseholdMemberService
     public function add(int $householdId, array $data, User $user): HouseholdMember
     {
         $household = $this->householdService->getForUser($householdId, $user);
-        $this->assertIsAdmin($household, $user);
+        $this->householdAccessChecker->assertIsAdmin($user, $household);
 
         $member = new HouseholdMember();
         $this->householdMemberHydrator->hydrate($member, $data, false);
         $this->assertIsNotAlreadyMember($member->getUser(), $household);
 
         $household->addHouseholdMember($member);
-        $this->householdMemberRepository->save($member);
+
+        try {
+            $this->householdMemberRepository->save($member);
+        } catch (UniqueConstraintViolationException) {
+            // Two requests at the same time (double click): the database refused the second one
+            throw new ValidationException(self::ALREADY_MEMBER_MESSAGE);
+        }
 
         return $member;
     }
@@ -50,7 +60,7 @@ class HouseholdMemberService
     public function update(int $householdId, int $memberId, array $data, User $user): HouseholdMember
     {
         $household = $this->householdService->getForUser($householdId, $user);
-        $this->assertIsAdmin($household, $user);
+        $this->householdAccessChecker->assertIsAdmin($user, $household);
         $member = $this->getMember($memberId, $household);
 
         $wasAdmin = $member->getRole() === HouseholdMemberRole::Admin;
@@ -75,7 +85,7 @@ class HouseholdMemberService
         // Same Doctrine identity map: the logged-in user is the same object as the member's user
         $isLeaving = $member->getUser() === $user;
         if (!$isLeaving) {
-            $this->assertIsAdmin($household, $user);
+            $this->householdAccessChecker->assertIsAdmin($user, $household);
         }
 
         if ($member->getRole() === HouseholdMemberRole::Admin) {
@@ -96,19 +106,11 @@ class HouseholdMemberService
         return $member;
     }
 
-    // Viewers can read the household data but never modify it
-    private function assertIsAdmin(Household $household, User $user): void
-    {
-        if (!$this->householdMemberRepository->isAdmin($user, $household)) {
-            throw new ForbiddenException('Vous avez un accès en lecture seule à ce foyer.');
-        }
-    }
-
-    // The unique pair (user, household) is not enforced in the database
+    // Checked before saving to answer with a clear message; the database unique index is the last safety net
     private function assertIsNotAlreadyMember(User $user, Household $household): void
     {
         if ($this->householdMemberRepository->isMember($user, $household)) {
-            throw new ValidationException('Cette personne fait déjà partie du foyer.');
+            throw new ValidationException(self::ALREADY_MEMBER_MESSAGE);
         }
     }
 

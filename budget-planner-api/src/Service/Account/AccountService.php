@@ -5,17 +5,16 @@ namespace App\Service\Account;
 
 use App\Entity\Account;
 use App\Entity\User;
-use App\Exception\ForbiddenException;
 use App\Exception\NotFoundException;
 use App\Exception\ValidationException;
 use App\Repository\AccountRepository;
-use App\Repository\HouseholdMemberRepository;
+use App\Service\Household\HouseholdAccessChecker;
 
 class AccountService
 {
     public function __construct(
         private AccountRepository $accountRepository,
-        private HouseholdMemberRepository $householdMemberRepository,
+        private HouseholdAccessChecker $householdAccessChecker,
         private AccountHydrator $accountHydrator
     ) {
     }
@@ -74,14 +73,9 @@ class AccountService
         $this->accountRepository->remove($account);
     }
 
-    // Viewers can read the household data but never modify it
     private function assertCanEdit(Account $account, User $user): void
     {
-        $household = $account->getHousehold();
-
-        if (!$this->householdMemberRepository->isAdmin($user, $household)) {
-            throw new ForbiddenException('Vous avez un accès en lecture seule à ce foyer.');
-        }
+        $this->householdAccessChecker->assertIsAdmin($user, $account->getHousehold());
     }
 
     // The foreign key would make the DELETE fail with a 500 otherwise

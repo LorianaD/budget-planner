@@ -5,16 +5,15 @@ namespace App\Service\Transaction;
 
 use App\Entity\Transaction;
 use App\Entity\User;
-use App\Exception\ForbiddenException;
 use App\Exception\NotFoundException;
-use App\Repository\HouseholdMemberRepository;
 use App\Repository\TransactionRepository;
+use App\Service\Household\HouseholdAccessChecker;
 
 class TransactionService
 {
     public function __construct(
         private TransactionRepository $transactionRepository,
-        private HouseholdMemberRepository $householdMemberRepository,
+        private HouseholdAccessChecker $householdAccessChecker,
         private TransactionHydrator $transactionHydrator
     ) {
     }
@@ -73,13 +72,11 @@ class TransactionService
         $this->transactionRepository->remove($transaction);
     }
 
-    // Viewers can read the household data but never modify it
+    // A transaction belongs to the household of its account
     private function assertCanEdit(Transaction $transaction, User $user): void
     {
         $household = $transaction->getAccount()->getHousehold();
 
-        if (!$this->householdMemberRepository->isAdmin($user, $household)) {
-            throw new ForbiddenException('Vous avez un accès en lecture seule à ce foyer.');
-        }
+        $this->householdAccessChecker->assertIsAdmin($user, $household);
     }
 }
