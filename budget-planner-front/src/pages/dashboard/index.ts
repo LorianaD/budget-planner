@@ -1,2 +1,2 @@
-export {default as DashboardHome} from './DashboardHome';
-export {default as DashboardAccounts} from './DashboardAccounts';
+export * from './DashboardHome';
+export * from './DashboardAccounts';
