@@ -43,7 +43,7 @@ class Transaction
     private ?string $label = null;
 
     #[ORM\Column(options: ['default' => false])]
-    private ?bool $isRecurring = null;
+    private ?bool $isRecurring = false;
 
     #[ORM\Column(length: 20, nullable: true, enumType: TransactionFrequency::class)]
     private ?TransactionFrequency $frequency = null;

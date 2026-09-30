@@ -11,7 +11,8 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class UserProfileController extends AbstractController
 {
-    #[Route('/user/profile', name: 'app_user_profile')]
+    // Under /api so the JWT firewall authenticates the user
+    #[Route('/api/me', name: 'app_user_profile', methods: ['GET'])]
     public function index(UserProfile $userProfile): JsonResponse
     {
         $user = $this->getUser();
