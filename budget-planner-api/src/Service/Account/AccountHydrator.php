@@ -8,6 +8,7 @@ use App\Entity\Household;
 use App\Entity\User;
 use App\Exception\ValidationException;
 use App\Repository\HouseholdRepository;
+use App\Util\DecimalFormatter;
 
 class AccountHydrator
 {
@@ -105,6 +106,6 @@ class AccountHydrator
             throw new ValidationException('Le solde initial doit être un nombre avec 2 décimales maximum.');
         }
 
-        return $initialBalance;
+        return DecimalFormatter::withTwoDecimals($initialBalance);
     }
 }

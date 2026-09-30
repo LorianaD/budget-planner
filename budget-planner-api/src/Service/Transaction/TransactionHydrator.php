@@ -12,6 +12,7 @@ use App\Enum\TransactionType;
 use App\Exception\ValidationException;
 use App\Repository\AccountRepository;
 use App\Repository\CategoryRepository;
+use App\Util\DecimalFormatter;
 
 class TransactionHydrator
 {
@@ -129,7 +130,7 @@ class TransactionHydrator
             throw new ValidationException('Le montant doit être supérieur à 0.');
         }
 
-        return $amount;
+        return DecimalFormatter::withTwoDecimals($amount);
     }
 
     private function parseDate(mixed $value, string $field): \DateTimeImmutable
