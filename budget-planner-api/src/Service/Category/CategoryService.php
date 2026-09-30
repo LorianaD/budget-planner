@@ -5,6 +5,7 @@ namespace App\Service\Category;
 
 use App\Entity\Category;
 use App\Entity\User;
+use App\Exception\ConflictException;
 use App\Exception\NotFoundException;
 use App\Exception\ValidationException;
 use App\Repository\CategoryRepository;
@@ -90,7 +91,7 @@ class CategoryService
         $hasScenarioTransactions = !$category->getScenarioTransactions()->isEmpty();
 
         if ($hasTransactions || $hasScenarioTransactions) {
-            throw new ValidationException('Cette catégorie est utilisée par des transactions et ne peut pas être supprimée.');
+            throw new ConflictException('Cette catégorie est utilisée par des transactions et ne peut pas être supprimée.');
         }
     }
 }

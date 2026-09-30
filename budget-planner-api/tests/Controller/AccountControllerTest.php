@@ -151,7 +151,7 @@ final class AccountControllerTest extends ApiTestCase
 
         $this->requestJson('DELETE', '/api/accounts/' . $account->getId());
 
-        self::assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+        self::assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
         $this->assertResponseMessage('Ce compte contient des transactions et ne peut pas être supprimé.');
     }
 }

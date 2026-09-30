@@ -130,7 +130,7 @@ final class HouseholdControllerTest extends ApiTestCase
 
         $this->requestJson('DELETE', '/api/households/' . $this->household->getId());
 
-        self::assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+        self::assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
     }
 
     public function testViewerCannotDeleteTheHousehold(): void

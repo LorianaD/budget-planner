@@ -8,6 +8,7 @@ use App\Entity\Household;
 use App\Entity\HouseholdMember;
 use App\Entity\User;
 use App\Enum\HouseholdMemberRole;
+use App\Exception\ConflictException;
 use App\Exception\ForbiddenException;
 use App\Exception\NotFoundException;
 use App\Exception\ValidationException;
@@ -164,7 +165,7 @@ final class HouseholdServiceTest extends TestCase
 
         $service = $this->createService($householdRepository, $this->createMemberRepository(true), $entityManager);
 
-        $this->expectException(ValidationException::class);
+        $this->expectException(ConflictException::class);
 
         $service->delete(1, $this->user);
     }

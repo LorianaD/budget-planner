@@ -174,6 +174,6 @@ final class CategoryControllerTest extends ApiTestCase
 
         $this->requestJson('DELETE', '/api/categories/' . $category->getId());
 
-        self::assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+        self::assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
     }
 }

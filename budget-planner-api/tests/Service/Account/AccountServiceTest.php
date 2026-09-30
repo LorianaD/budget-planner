@@ -6,9 +6,9 @@ use App\Entity\Account;
 use App\Entity\Household;
 use App\Entity\Transaction;
 use App\Entity\User;
+use App\Exception\ConflictException;
 use App\Exception\ForbiddenException;
 use App\Exception\NotFoundException;
-use App\Exception\ValidationException;
 use App\Repository\AccountRepository;
 use App\Repository\HouseholdMemberRepository;
 use App\Repository\HouseholdRepository;
@@ -163,7 +163,7 @@ final class AccountServiceTest extends TestCase
 
         $service = $this->createService($accountRepository, $this->createMemberRepository(true), $entityManager);
 
-        $this->expectException(ValidationException::class);
+        $this->expectException(ConflictException::class);
 
         $service->delete(1, $this->user);
     }

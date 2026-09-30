@@ -7,8 +7,8 @@ use App\Entity\Household;
 use App\Entity\HouseholdMember;
 use App\Entity\User;
 use App\Enum\HouseholdMemberRole;
+use App\Exception\ConflictException;
 use App\Exception\NotFoundException;
-use App\Exception\ValidationException;
 use App\Repository\HouseholdMemberRepository;
 use App\Service\Household\HouseholdAccessChecker;
 use App\Service\Household\HouseholdService;
@@ -55,7 +55,7 @@ class HouseholdMemberService
             $this->entityManager->flush();
         } catch (UniqueConstraintViolationException) {
             // Two requests at the same time (double click): the database refused the second one
-            throw new ValidationException(self::ALREADY_MEMBER_MESSAGE);
+            throw new ConflictException(self::ALREADY_MEMBER_MESSAGE);
         }
 
         return $member;
@@ -116,7 +116,7 @@ class HouseholdMemberService
     private function assertIsNotAlreadyMember(User $user, Household $household): void
     {
         if ($this->householdMemberRepository->isMember($user, $household)) {
-            throw new ValidationException(self::ALREADY_MEMBER_MESSAGE);
+            throw new ConflictException(self::ALREADY_MEMBER_MESSAGE);
         }
     }
 
@@ -126,7 +126,7 @@ class HouseholdMemberService
         $adminCount = $this->householdMemberRepository->countAdmins($household);
 
         if ($adminCount <= 1) {
-            throw new ValidationException('Le foyer doit garder au moins un administrateur.');
+            throw new ConflictException('Le foyer doit garder au moins un administrateur.');
         }
     }
 }

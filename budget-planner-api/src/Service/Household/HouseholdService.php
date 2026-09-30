@@ -7,6 +7,7 @@ use App\Entity\Household;
 use App\Entity\HouseholdMember;
 use App\Entity\User;
 use App\Enum\HouseholdMemberRole;
+use App\Exception\ConflictException;
 use App\Exception\NotFoundException;
 use App\Exception\ValidationException;
 use App\Repository\HouseholdRepository;
@@ -96,7 +97,7 @@ class HouseholdService
         $hasScenarios = !$household->getScenarios()->isEmpty();
 
         if ($hasAccounts || $hasCategories || $hasScenarios) {
-            throw new ValidationException('Ce foyer contient encore des comptes, catégories ou scénarios et ne peut pas être supprimé.');
+            throw new ConflictException('Ce foyer contient encore des comptes, catégories ou scénarios et ne peut pas être supprimé.');
         }
     }
 }

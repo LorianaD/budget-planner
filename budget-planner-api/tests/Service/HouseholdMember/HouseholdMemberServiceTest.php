@@ -6,9 +6,9 @@ use App\Entity\Household;
 use App\Entity\HouseholdMember;
 use App\Entity\User;
 use App\Enum\HouseholdMemberRole;
+use App\Exception\ConflictException;
 use App\Exception\ForbiddenException;
 use App\Exception\NotFoundException;
-use App\Exception\ValidationException;
 use App\Repository\HouseholdMemberRepository;
 use App\Repository\UserRepository;
 use App\Service\Household\HouseholdAccessChecker;
@@ -84,7 +84,7 @@ final class HouseholdMemberServiceTest extends TestCase
 
         $service = $this->createService($memberRepository, $entityManager);
 
-        $this->expectException(ValidationException::class);
+        $this->expectException(ConflictException::class);
         $this->expectExceptionMessageIs('Cette personne fait déjà partie du foyer.');
 
         $service->add(1, ['email' => 'proche@example.com'], $this->user);
@@ -116,7 +116,7 @@ final class HouseholdMemberServiceTest extends TestCase
 
         $service = $this->createService($memberRepository, $entityManager);
 
-        $this->expectException(ValidationException::class);
+        $this->expectException(ConflictException::class);
         $this->expectExceptionMessageIs('Cette personne fait déjà partie du foyer.');
 
         $service->add(1, ['email' => 'proche@example.com'], $this->user);
@@ -180,7 +180,7 @@ final class HouseholdMemberServiceTest extends TestCase
 
         $service = $this->createService($memberRepository, $entityManager);
 
-        $this->expectException(ValidationException::class);
+        $this->expectException(ConflictException::class);
         $this->expectExceptionMessageIs('Le foyer doit garder au moins un administrateur.');
 
         $service->update(1, 5, ['role' => 'viewer'], $this->user);
@@ -266,7 +266,7 @@ final class HouseholdMemberServiceTest extends TestCase
 
         $service = $this->createService($memberRepository, $entityManager);
 
-        $this->expectException(ValidationException::class);
+        $this->expectException(ConflictException::class);
 
         $service->remove(1, 5, $this->user);
     }

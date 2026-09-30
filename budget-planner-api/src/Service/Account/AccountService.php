@@ -5,6 +5,7 @@ namespace App\Service\Account;
 
 use App\Entity\Account;
 use App\Entity\User;
+use App\Exception\ConflictException;
 use App\Exception\NotFoundException;
 use App\Exception\ValidationException;
 use App\Repository\AccountRepository;
@@ -87,7 +88,7 @@ class AccountService
     private function assertHasNoTransactions(Account $account): void
     {
         if (!$account->getTransactions()->isEmpty()) {
-            throw new ValidationException('Ce compte contient des transactions et ne peut pas être supprimé.');
+            throw new ConflictException('Ce compte contient des transactions et ne peut pas être supprimé.');
         }
     }
 }

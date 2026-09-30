@@ -102,7 +102,7 @@ final class HouseholdMemberControllerTest extends ApiTestCase
 
         $this->requestJson('POST', $this->membersUri(), ['email' => 'viewer@example.com']);
 
-        self::assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+        self::assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
         $this->assertResponseMessage('Cette personne fait déjà partie du foyer.');
     }
 
@@ -143,7 +143,7 @@ final class HouseholdMemberControllerTest extends ApiTestCase
 
         $this->requestJson('PATCH', $this->memberUri($this->adminMember), ['role' => 'viewer']);
 
-        self::assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+        self::assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
         $this->assertResponseMessage('Le foyer doit garder au moins un administrateur.');
     }
 
@@ -208,6 +208,6 @@ final class HouseholdMemberControllerTest extends ApiTestCase
 
         $this->requestJson('DELETE', $this->memberUri($this->adminMember));
 
-        self::assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+        self::assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
     }
 }
