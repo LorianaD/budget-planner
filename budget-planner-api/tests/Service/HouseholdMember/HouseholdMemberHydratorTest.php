@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Tests\Unit\Service\HouseholdMember;
+namespace App\Tests\Service\HouseholdMember;
 
 use App\Entity\HouseholdMember;
 use App\Entity\User;
@@ -48,7 +48,7 @@ final class HouseholdMemberHydratorTest extends TestCase
     public function testCreationFailsWithoutEmail(): void
     {
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Le champ "email" est obligatoire.');
+        $this->expectExceptionMessageIs('Le champ "email" est obligatoire.');
 
         $this->hydrator->hydrate(new HouseholdMember(), ['role' => 'viewer'], false);
     }
@@ -69,7 +69,7 @@ final class HouseholdMemberHydratorTest extends TestCase
     public function testInvalidEmailIsRejected(string $email): void
     {
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Email invalide.');
+        $this->expectExceptionMessageIs('Email invalide.');
 
         $this->hydrator->hydrate(new HouseholdMember(), ['email' => $email], false);
     }
@@ -81,7 +81,7 @@ final class HouseholdMemberHydratorTest extends TestCase
         $hydrator = new HouseholdMemberHydrator($userRepository);
 
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Aucun compte n\'est associé à cet email.');
+        $this->expectExceptionMessageIs('Aucun compte n\'est associé à cet email.');
 
         $hydrator->hydrate(new HouseholdMember(), ['email' => 'inconnu@example.com'], false);
     }
@@ -108,7 +108,7 @@ final class HouseholdMemberHydratorTest extends TestCase
     public function testUnknownRoleIsRejected(): void
     {
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Rôle invalide (admin ou viewer).');
+        $this->expectExceptionMessageIs('Rôle invalide (admin ou viewer).');
 
         $this->hydrator->hydrate(new HouseholdMember(), ['role' => 'owner'], true);
     }

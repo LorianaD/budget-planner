@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Tests\Unit\Service\Category;
+namespace App\Tests\Service\Category;
 
 use App\Entity\Category;
 use App\Entity\Household;
@@ -14,6 +14,7 @@ use App\Repository\HouseholdMemberRepository;
 use App\Repository\HouseholdRepository;
 use App\Service\Category\CategoryHydrator;
 use App\Service\Category\CategoryService;
+use App\Service\Household\HouseholdAccessChecker;
 use PHPUnit\Framework\TestCase;
 
 final class CategoryServiceTest extends TestCase
@@ -101,7 +102,7 @@ final class CategoryServiceTest extends TestCase
         try {
             $service->update(1, ['name' => 'Nouveau nom'], $this->user);
             self::fail('Une ForbiddenException était attendue.');
-        } catch (ForbiddenException $exception) {
+        } catch (ForbiddenException) {
             // The category must not have been modified before the permission check
             self::assertSame('Courses', $category->getName());
         }
@@ -194,6 +195,6 @@ final class CategoryServiceTest extends TestCase
 
         $hydrator = new CategoryHydrator($householdRepository);
 
-        return new CategoryService($categoryRepository, $memberRepository, $hydrator);
+        return new CategoryService($categoryRepository, new HouseholdAccessChecker($memberRepository), $hydrator);
     }
 }

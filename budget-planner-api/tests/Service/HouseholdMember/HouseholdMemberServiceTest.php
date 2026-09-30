@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Tests\Unit\Service\HouseholdMember;
+namespace App\Tests\Service\HouseholdMember;
 
 use App\Entity\Household;
 use App\Entity\HouseholdMember;
@@ -11,9 +11,11 @@ use App\Exception\NotFoundException;
 use App\Exception\ValidationException;
 use App\Repository\HouseholdMemberRepository;
 use App\Repository\UserRepository;
+use App\Service\Household\HouseholdAccessChecker;
 use App\Service\Household\HouseholdService;
 use App\Service\HouseholdMember\HouseholdMemberHydrator;
 use App\Service\HouseholdMember\HouseholdMemberService;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use PHPUnit\Framework\TestCase;
 
 final class HouseholdMemberServiceTest extends TestCase
@@ -34,9 +36,11 @@ final class HouseholdMemberServiceTest extends TestCase
         $householdService = $this->createStub(HouseholdService::class);
         $householdService->method('getForUser')->willThrowException(new NotFoundException('Foyer introuvable.'));
 
+        $memberRepository = $this->createStub(HouseholdMemberRepository::class);
         $service = new HouseholdMemberService(
             $householdService,
-            $this->createStub(HouseholdMemberRepository::class),
+            new HouseholdAccessChecker($memberRepository),
+            $memberRepository,
             $this->createHydrator()
         );
 
@@ -59,6 +63,24 @@ final class HouseholdMemberServiceTest extends TestCase
         self::assertSame($this->invitedUser, $member->getUser());
         self::assertSame($this->household, $member->getHousehold());
         self::assertSame(HouseholdMemberRole::Viewer, $member->getRole());
+    }
+
+    public function testDoubleClickOnAddGivesAClearMessage(): void
+    {
+        // Both requests passed the "already member?" check, the database refuses the second insert
+        $memberRepository = $this->createStub(HouseholdMemberRepository::class);
+        $memberRepository->method('isAdmin')->willReturn(true);
+        $memberRepository->method('isMember')->willReturn(false);
+        $memberRepository->method('save')->willThrowException(
+            $this->createStub(UniqueConstraintViolationException::class)
+        );
+
+        $service = $this->createService($memberRepository);
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessageIs('Cette personne fait déjà partie du foyer.');
+
+        $service->add(1, ['email' => 'proche@example.com'], $this->user);
     }
 
     public function testViewerCannotAddAMember(): void
@@ -84,7 +106,7 @@ final class HouseholdMemberServiceTest extends TestCase
         $service = $this->createService($memberRepository);
 
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Cette personne fait déjà partie du foyer.');
+        $this->expectExceptionMessageIs('Cette personne fait déjà partie du foyer.');
 
         $service->add(1, ['email' => 'proche@example.com'], $this->user);
     }
@@ -142,7 +164,7 @@ final class HouseholdMemberServiceTest extends TestCase
         $service = $this->createService($memberRepository);
 
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Le foyer doit garder au moins un administrateur.');
+        $this->expectExceptionMessageIs('Le foyer doit garder au moins un administrateur.');
 
         $service->update(1, 5, ['role' => 'viewer'], $this->user);
     }
@@ -244,6 +266,11 @@ final class HouseholdMemberServiceTest extends TestCase
         $householdService = $this->createStub(HouseholdService::class);
         $householdService->method('getForUser')->willReturn($this->household);
 
-        return new HouseholdMemberService($householdService, $memberRepository, $this->createHydrator());
+        return new HouseholdMemberService(
+            $householdService,
+            new HouseholdAccessChecker($memberRepository),
+            $memberRepository,
+            $this->createHydrator()
+        );
     }
 }

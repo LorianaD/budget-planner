@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Tests\Unit\Service\Category;
+namespace App\Tests\Service\Category;
 
 use App\Entity\Category;
 use App\Entity\Household;

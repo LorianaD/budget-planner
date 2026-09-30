@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Tests\Unit\Service\Category;
+namespace App\Tests\Service\Category;
 
 use App\Entity\Category;
 use App\Entity\Household;
@@ -79,7 +79,7 @@ final class CategoryHydratorTest extends TestCase
         unset($data[$missingField]);
 
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage(sprintf('Le champ "%s" est obligatoire.', $missingField));
+        $this->expectExceptionMessageIs(sprintf('Le champ "%s" est obligatoire.', $missingField));
 
         $this->hydrator->hydrate(new Category(), $data, $this->user, false);
     }
@@ -129,7 +129,7 @@ final class CategoryHydratorTest extends TestCase
     public function testInvalidDataIsRejected(array $data, string $expectedMessage): void
     {
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage($expectedMessage);
+        $this->expectExceptionMessageIs($expectedMessage);
 
         $this->hydrator->hydrate(new Category(), $data, $this->user, true);
     }
@@ -151,7 +151,7 @@ final class CategoryHydratorTest extends TestCase
         $hydrator = new CategoryHydrator($householdRepository);
 
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Foyer introuvable.');
+        $this->expectExceptionMessageIs('Foyer introuvable.');
 
         $hydrator->hydrate(new Category(), ['householdId' => 999], $this->user, true);
     }

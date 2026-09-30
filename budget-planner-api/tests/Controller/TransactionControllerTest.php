@@ -156,12 +156,17 @@ final class TransactionControllerTest extends ApiTestCase
         $transaction = $this->createTransaction($this->admin, $this->account, $this->category);
         $this->loginAs($this->admin);
 
-        $this->requestJson('PATCH', '/api/transactions/' . $transaction->getId(), ['amount' => '60.50']);
+        $this->requestJson('PATCH', '/api/transactions/' . $transaction->getId(), ['amount' => '60']);
 
         self::assertResponseIsSuccessful();
         $data = $this->responseData();
-        self::assertSame('60.50', $data['amount']);
+        self::assertSame('60.00', $data['amount']);
         self::assertSame('Supermarché', $data['label']);
+
+        // Same format when the transaction is read again
+        $this->requestJson('GET', '/api/transactions/' . $transaction->getId());
+        $readAgain = $this->responseData();
+        self::assertSame('60.00', $readAgain['amount']);
     }
 
     public function testViewerCannotUpdateATransaction(): void

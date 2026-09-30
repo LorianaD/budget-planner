@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Tests\Unit\Service\Transaction;
+namespace App\Tests\Service\Transaction;
 
 use App\Entity\Account;
 use App\Entity\Category;
@@ -90,7 +90,7 @@ final class TransactionHydratorTest extends TestCase
         unset($data[$missingField]);
 
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage(sprintf('Le champ "%s" est obligatoire.', $missingField));
+        $this->expectExceptionMessageIs(sprintf('Le champ "%s" est obligatoire.', $missingField));
 
         $this->hydrator->hydrate(new Transaction(), $data, $this->user, false);
     }
@@ -102,34 +102,35 @@ final class TransactionHydratorTest extends TestCase
 
         $this->hydrator->hydrate($transaction, ['amount' => '50'], $this->user, true);
 
-        self::assertSame('50', $transaction->getAmount());
+        self::assertSame('50.00', $transaction->getAmount());
         self::assertSame('Supermarché', $transaction->getLabel());
         self::assertSame(TransactionType::Expense, $transaction->getType());
     }
 
     /**
-     * @return array<string, array{mixed}>
+     * @return array<string, array{mixed, string}>
      */
     public static function validAmountProvider(): array
     {
         return [
-            'entier' => ['12'],
-            'une décimale' => ['12.5'],
-            'deux décimales' => ['12.50'],
-            'nombre JSON' => [12.5],
-            'plus petit montant' => ['0.01'],
-            'plus grand montant' => ['99999999.99'],
+            'entier' => ['12', '12.00'],
+            'une décimale' => ['12.5', '12.50'],
+            'deux décimales' => ['12.50', '12.50'],
+            'nombre JSON' => [12.5, '12.50'],
+            'plus petit montant' => ['0.01', '0.01'],
+            'plus grand montant' => ['99999999.99', '99999999.99'],
         ];
     }
 
+    // The amount is always stored with 2 decimals, like MySQL returns it
     #[DataProvider('validAmountProvider')]
-    public function testValidAmountsAreAccepted(mixed $amount): void
+    public function testValidAmountsAreAccepted(mixed $amount, string $expectedAmount): void
     {
         $transaction = new Transaction();
 
         $this->hydrator->hydrate($transaction, ['amount' => $amount], $this->user, true);
 
-        self::assertSame((string) $amount, $transaction->getAmount());
+        self::assertSame($expectedAmount, $transaction->getAmount());
     }
 
     /**
@@ -175,7 +176,7 @@ final class TransactionHydratorTest extends TestCase
     public function testInvalidDatesAreRejected(string $date): void
     {
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Le champ "date" doit être une date au format AAAA-MM-JJ.');
+        $this->expectExceptionMessageIs('Le champ "date" doit être une date au format AAAA-MM-JJ.');
 
         $this->hydrator->hydrate(new Transaction(), ['date' => $date], $this->user, true);
     }
@@ -203,7 +204,7 @@ final class TransactionHydratorTest extends TestCase
     public function testInvalidDataIsRejected(array $data, string $expectedMessage): void
     {
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage($expectedMessage);
+        $this->expectExceptionMessageIs($expectedMessage);
 
         $this->hydrator->hydrate(new Transaction(), $data, $this->user, true);
     }
@@ -215,7 +216,7 @@ final class TransactionHydratorTest extends TestCase
         $hydrator = new TransactionHydrator($accountRepository, $this->createStub(CategoryRepository::class));
 
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Compte introuvable.');
+        $this->expectExceptionMessageIs('Compte introuvable.');
 
         $hydrator->hydrate(new Transaction(), ['accountId' => 999], $this->user, true);
     }
@@ -227,7 +228,7 @@ final class TransactionHydratorTest extends TestCase
         $hydrator = new TransactionHydrator($this->createStub(AccountRepository::class), $categoryRepository);
 
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Catégorie introuvable.');
+        $this->expectExceptionMessageIs('Catégorie introuvable.');
 
         $hydrator->hydrate(new Transaction(), ['categoryId' => 999], $this->user, true);
     }
@@ -253,7 +254,7 @@ final class TransactionHydratorTest extends TestCase
         $data['isRecurring'] = true;
 
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Une transaction récurrente doit avoir une fréquence.');
+        $this->expectExceptionMessageIs('Une transaction récurrente doit avoir une fréquence.');
 
         $this->hydrator->hydrate(new Transaction(), $data, $this->user, false);
     }
@@ -277,7 +278,7 @@ final class TransactionHydratorTest extends TestCase
     public function testInvalidCommitmentEndDateMentionsTheRightField(): void
     {
         $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('Le champ "commitmentEndDate" doit être une date au format AAAA-MM-JJ.');
+        $this->expectExceptionMessageIs('Le champ "commitmentEndDate" doit être une date au format AAAA-MM-JJ.');
 
         $this->hydrator->hydrate(new Transaction(), ['commitmentEndDate' => '2027-13-01'], $this->user, true);
     }

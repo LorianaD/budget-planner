@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Tests\Unit\Service\Transaction;
+namespace App\Tests\Service\Transaction;
 
 use App\Entity\Account;
 use App\Entity\Category;
@@ -13,6 +13,7 @@ use App\Repository\AccountRepository;
 use App\Repository\CategoryRepository;
 use App\Repository\HouseholdMemberRepository;
 use App\Repository\TransactionRepository;
+use App\Service\Household\HouseholdAccessChecker;
 use App\Service\Transaction\TransactionHydrator;
 use App\Service\Transaction\TransactionService;
 use PHPUnit\Framework\TestCase;
@@ -94,7 +95,7 @@ final class TransactionServiceTest extends TestCase
         try {
             $service->update(1, ['label' => 'Loyer'], $this->user);
             self::fail('Une ForbiddenException était attendue.');
-        } catch (ForbiddenException $exception) {
+        } catch (ForbiddenException) {
             // The transaction must not have been modified before the permission check
             self::assertSame('Supermarché', $transaction->getLabel());
         }
@@ -191,6 +192,6 @@ final class TransactionServiceTest extends TestCase
 
         $hydrator = new TransactionHydrator($accountRepository, $categoryRepository);
 
-        return new TransactionService($transactionRepository, $memberRepository, $hydrator);
+        return new TransactionService($transactionRepository, new HouseholdAccessChecker($memberRepository), $hydrator);
     }
 }
