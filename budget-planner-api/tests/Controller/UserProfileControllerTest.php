@@ -2,15 +2,41 @@
 
 namespace App\Tests\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpFoundation\Response;
 
-final class UserProfileControllerTest extends WebTestCase
+final class UserProfileControllerTest extends ApiTestCase
 {
-    public function testIndex(): void
+    public function testLoggedInUserGetsTheirProfile(): void
     {
-        $client = static::createClient();
-        $client->request('GET', '/user/profile');
+        $user = $this->createUser('loriana@example.com', 'Loriana');
+        $this->loginAs($user);
+
+        $this->requestJson('GET', '/api/me');
 
         self::assertResponseIsSuccessful();
+
+        $expected = [
+            'id' => $user->getId(),
+            'email' => 'loriana@example.com',
+            'name' => 'Loriana',
+            'color' => null,
+        ];
+        self::assertSame($expected, $this->responseData());
+    }
+
+    public function testProfileRequiresAToken(): void
+    {
+        $this->requestJson('GET', '/api/me');
+
+        self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+    }
+
+    public function testInvalidTokenIsRejected(): void
+    {
+        $this->client->setServerParameter('HTTP_AUTHORIZATION', 'Bearer faux-token');
+
+        $this->requestJson('GET', '/api/me');
+
+        self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
     }
 }
