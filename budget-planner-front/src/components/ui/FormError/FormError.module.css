@@ -1,0 +1,9 @@
+.form-error {
+    margin: 0;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: var(--statut-urgent-pale);
+    color: var(--statut-urgent-dark);
+    font-family: "Inter", sans-serif;
+    font-size: 13px;
+}

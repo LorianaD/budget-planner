@@ -1,3 +1,15 @@
 .main--dashboard {
     display: flex;
 }
+
+.main--auth {
+    display: grid;
+    grid-template-columns: minmax(360px, 480px) 1fr;
+    min-height: 100vh;
+}
+
+@media (max-width: 860px) {
+    .main--auth {
+        grid-template-columns: 1fr;
+    }
+}

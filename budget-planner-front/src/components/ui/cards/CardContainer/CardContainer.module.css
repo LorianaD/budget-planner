@@ -1,0 +1,10 @@
+.card-container {
+    display: flex;
+    padding: 24px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+    border-radius: 14px;
+    border: 1px solid var(--surface-border, #DEE1D9);
+    background: var(--surface-card, #FFF);
+}

@@ -1,0 +1,29 @@
+.badge {
+    display: flex;
+    padding: 5px 10px;
+    align-items: flex-start;
+    border-radius: 100px;
+}
+
+.badge--essentiels,
+.badge--danger {
+    background: var(--essentiels-pale);
+    color: var(--essentiels);
+    font-weight: 500;
+}
+
+.badge--hobbies {
+    background: var(--hobbies-pale);
+    color: var(--hobbies);
+    font-weight: 500;
+}
+
+.badge--saving {
+    background: var(--saving-pale);
+    color: var(--saving);
+}
+
+.badge--checking_account {
+    background: var(--account-checking-pale);
+    color: var(--account-checking);
+}

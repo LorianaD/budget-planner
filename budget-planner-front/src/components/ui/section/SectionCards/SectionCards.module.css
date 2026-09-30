@@ -1,0 +1,6 @@
+.section-cards {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    width: 100%;
+}

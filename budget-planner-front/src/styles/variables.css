@@ -1,22 +1,145 @@
+/* Fraunces - Roman */
+@font-face {
+  font-family: 'Fraunces';
+  src: url('../assets/fonts/Fraunces/Fraunces-VariableFont.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Fraunces - Italic */
+@font-face {
+  font-family: 'Fraunces';
+  src: url('../assets/fonts/Fraunces/Fraunces-Italic-VariableFont.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Inter - Roman */
+@font-face {
+  font-family: 'Inter';
+  src: url('../assets/fonts/Inter/Inter-VariableFont.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Inter - Italic */
+@font-face {
+  font-family: 'Inter';
+  src: url('../assets/fonts/Inter/Inter-Italic-VariableFont.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
 
   /* ***********************************
-    COULEURS
+    COULEURS — UI générique (statuts, actions)
   *********************************** */
   --dark-blue: #003366;
   --blue: #006DDA;
   --pale-blue: #E3EDF5;
- 
+
   --dark-green: #2E7D32;
   --green: #4CAF50;
   --pale-green: #EAF7EA;
- 
-  --dark-red: #7b1b1b;
+
+  --dark-red: #7B1B1B;
   --red: #D32F2F;
   --pale-red: #FDECEA;
 
+  --dark-orange: #C15C00;
   --orange: #F57C00;
   --pale-orange: #FFF8E1;
+
+  --white: #FFFFFF;
+
+  /* ***********************************
+    COULEURS — Statuts de montant / solde
+    (réutilisent la palette générique ci-dessus)
+  *********************************** */
+  --statut-urgent-dark: var(--dark-red);
+  --statut-urgent: var(--red);
+  --statut-urgent-pale: var(--pale-red);
+
+  --statut-attention-dark: var(--dark-orange);
+  --statut-attention: var(--orange);
+  --statut-attention-pale: var(--pale-orange);
+
+  --statut-ok-dark: var(--dark-green);
+  --statut-ok: var(--green);
+  --statut-ok-pale: var(--pale-green);
+
+  /* ***********************************
+    COULEURS — Catégories budgétaires (règle 50/30/20)
+    dark = couleur Excel d'origine, base = version pastel, pale = fond très clair
+  *********************************** */
+  --essentiels-dark: #C00000;
+  --essentiels: #D97D7D;
+  --essentiels-pale: #F6E3E3;
+
+  --hobbies-dark: #0070C0;
+  --hobbies: #7FADD6;
+  --hobbies-pale: #E4EEF7;
+
+  --saving-dark: #4E9E5A;
+  --saving: #83E28E;
+  --saving-pale: #E3F5E6;
+
+  /* ***********************************
+    COULEURS — Comptes bancaires
+  *********************************** */
+  --account-checking-dark: #5B4B8A;
+  --account-checking: #948AB3;
+  --account-checking-pale: #DBD7E5;
+
+  --account-saving-dark: #1F7A8C;
+  --account-saving: #6DA9B4;
+  --account-saving-pale: #CEE2E6;
+
+  --account-joint-dark: #A65A7E;
+  --account-joint: #C594AB;
+  --account-joint-pale: #EBDBE3;
+
+  --account-cash-dark: #6B7A3F;
+  --account-cash: #9FA982;
+  --account-cash-pale: #DEE2D5;
+
+  /* ***********************************
+    COULEURS — Membres du foyer
+    (réutilisent les teintes catégories/comptes pour rester cohérent)
+  *********************************** */
+  --personne-loriana: var(--hobbies-dark);
+  --personne-celine: var(--saving-dark);
+  --personne-papa: var(--essentiels-dark);
+
+  /* ***********************************
+    COULEURS — Texte & surfaces
+  *********************************** */
+  --ink-primary: #1B2A26;
+  --ink-secondary: #4B5B56;
+  --ink-muted: #8C9A95;
+
+  --surface-page: #F3F4EF;
+  --surface-card: #FFFFFF;
+  --surface-border: #DEE1D9;
+
+  /* ***********************************
+    COULEURS — Marque / navigation
+  *********************************** */
+  --brand-primaire: var(--dark-blue);
+  --sidebar-bg: var(--dark-blue);
+  --sidebar-text: #F3F4EF;
+  --sidebar-text-muted: #8FA39B;
+
+  /* ***********************************
+    FONT — UI générique
+  *********************************** */
+  --title: Fraunces;
+  --text: Inter;
 
   @media (max-width: 1024px) {
     font-size: 16px;
