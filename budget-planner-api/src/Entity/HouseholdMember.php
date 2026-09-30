@@ -7,6 +7,8 @@ use App\Repository\HouseholdMemberRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: HouseholdMemberRepository::class)]
+// A person can only be member of a given household once
+#[ORM\UniqueConstraint(name: 'UNIQ_HOUSEHOLD_MEMBER_USER_HOUSEHOLD', columns: ['user_id', 'household_id'])]
 class HouseholdMember
 {
     #[ORM\Id]
