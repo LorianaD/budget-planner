@@ -11,7 +11,7 @@ final class UserProfileControllerTest extends ApiTestCase
         $user = $this->createUser('loriana@example.com', 'Loriana');
         $this->loginAs($user);
 
-        $this->requestJson('GET', '/api/me');
+        $this->requestJson('GET', '/api/user/profile');
 
         self::assertResponseIsSuccessful();
 
@@ -26,7 +26,7 @@ final class UserProfileControllerTest extends ApiTestCase
 
     public function testProfileRequiresAToken(): void
     {
-        $this->requestJson('GET', '/api/me');
+        $this->requestJson('GET', '/api/user/profile');
 
         self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
     }
@@ -35,7 +35,7 @@ final class UserProfileControllerTest extends ApiTestCase
     {
         $this->client->setServerParameter('HTTP_AUTHORIZATION', 'Bearer faux-token');
 
-        $this->requestJson('GET', '/api/me');
+        $this->requestJson('GET', '/api/user/profile');
 
         self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
     }
