@@ -1,0 +1,59 @@
+.auth-page__form-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    background: var(--surface-page);
+}
+
+.auth-page__form-wrapper {
+    width: 100%;
+    max-width: 420px;
+}
+
+.auth-page__title {
+    margin: 0 0 8px;
+    color: var(--ink-primary);
+    font-family: "Fraunces", serif;
+    font-size: 32px;
+    font-weight: 600;
+}
+
+.auth-page__subtitle {
+    margin: 0 0 32px;
+    color: var(--ink-secondary);
+    font-family: "Inter", sans-serif;
+    font-size: 15px;
+}
+
+.auth-page__form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.auth-page__forgot-password {
+    align-self: flex-end;
+    margin-top: -8px;
+    color: var(--ink-muted);
+    font-family: "Inter", sans-serif;
+    font-size: 13px;
+}
+
+.auth-page__switch {
+    margin: 24px 0 0;
+    color: var(--ink-muted);
+    font-family: "Inter", sans-serif;
+    font-size: 13.5px;
+    text-align: center;
+}
+
+.auth-page__switch-link {
+    color: var(--ink-primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.auth-page__switch-link:hover {
+    text-decoration: underline;
+}
